@@ -21,6 +21,8 @@ export const generateCustomFeatureExperimentResults = async ({
   flagKey,
   metricKeys,
   defaultValue = false,
+  customTrueProbability,
+  customFalseProbability,
 }: {
   client: any;
   updateContext: () => void;
@@ -30,27 +32,51 @@ export const generateCustomFeatureExperimentResults = async ({
   flagKey: string;
   metricKeys: string[];
   defaultValue?: boolean | string | number;
+  customTrueProbability?: number;
+  customFalseProbability?: number;
 }): Promise<void> => {
   setProgress(0);
+
+  const experimentType: string = experimentTypeObj.experimentType;
 
   for (let i = 0; i < experimentTypeObj.numOfRuns; i++) {
     const flagVariation = client?.variation(flagKey, defaultValue);
     console.log(`${flagKey}:`, flagVariation);
 
-    // Generate different metrics based on flag variation
+    // Generate different metrics based on flag variation with probability
     if (flagVariation) {
-      // Winner variation - better metrics
-      for (const metricKey of metricKeys) {
-        const metricValue = Math.floor(Math.random() * (500 - 300 + 1)) + 700;
-        await client?.track(metricKey, undefined, metricValue);
-        await client?.flush();
+      // Winner variation - better metrics with probability
+      let probability = Math.random() * 100;
+      const trueProbThreshold =
+        customTrueProbability !== undefined
+          ? customTrueProbability
+          : probablityExperimentType[
+              experimentType as keyof typeof probablityExperimentType
+            ]['trueProbablity'];
+
+      if (probability < trueProbThreshold) {
+        for (const metricKey of metricKeys) {
+          const metricValue = Math.floor(Math.random() * (500 - 300 + 1)) + 700;
+          await client?.track(metricKey, undefined, metricValue);
+          await client?.flush();
+        }
       }
     } else {
-      // Control variation - baseline metrics
-      for (const metricKey of metricKeys) {
-        const metricValue = Math.floor(Math.random() * (300 - 200 + 1)) + 200;
-        await client?.track(metricKey, undefined, metricValue);
-        await client?.flush();
+      // Control variation - baseline metrics with probability
+      let probability = Math.random() * 100;
+      const falseProbThreshold =
+        customFalseProbability !== undefined
+          ? customFalseProbability
+          : probablityExperimentType[
+              experimentType as keyof typeof probablityExperimentType
+            ]['falseProbablity'];
+
+      if (probability < falseProbThreshold) {
+        for (const metricKey of metricKeys) {
+          const metricValue = Math.floor(Math.random() * (300 - 200 + 1)) + 200;
+          await client?.track(metricKey, undefined, metricValue);
+          await client?.flush();
+        }
       }
     }
 

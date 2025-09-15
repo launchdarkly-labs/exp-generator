@@ -30,6 +30,8 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
   const [customFlagKey, setCustomFlagKey] = useState('');
   const [customMetricKeys, setCustomMetricKeys] = useState('');
   const [customNumRuns, setCustomNumRuns] = useState(100);
+  const [customTrueProbability, setCustomTrueProbability] = useState(60);
+  const [customFalseProbability, setCustomFalseProbability] = useState(30);
   const [experimentState, setExperimentState] = useState<ExperimentState>({
     currentRun: 0,
     totalRuns: 0,
@@ -41,6 +43,12 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
     const savedFlagKey = localStorage.getItem('custom-flag-key');
     const savedMetricKeys = localStorage.getItem('custom-metric-keys');
     const savedNumRuns = localStorage.getItem('custom-num-runs');
+    const savedTrueProbability = localStorage.getItem(
+      'custom-true-probability'
+    );
+    const savedFalseProbability = localStorage.getItem(
+      'custom-false-probability'
+    );
 
     if (savedFlagKey) {
       setCustomFlagKey(savedFlagKey);
@@ -50,6 +58,12 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
     }
     if (savedNumRuns) {
       setCustomNumRuns(parseInt(savedNumRuns) || 100);
+    }
+    if (savedTrueProbability) {
+      setCustomTrueProbability(parseInt(savedTrueProbability) || 60);
+    }
+    if (savedFalseProbability) {
+      setCustomFalseProbability(parseInt(savedFalseProbability) || 30);
     }
   }, []);
 
@@ -67,6 +81,16 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
   const handleNumRunsChange = (value: number) => {
     setCustomNumRuns(value);
     localStorage.setItem('custom-num-runs', value.toString());
+  };
+
+  const handleTrueProbabilityChange = (value: number) => {
+    setCustomTrueProbability(value);
+    localStorage.setItem('custom-true-probability', value.toString());
+  };
+
+  const handleFalseProbabilityChange = (value: number) => {
+    setCustomFalseProbability(value);
+    localStorage.setItem('custom-false-probability', value.toString());
   };
 
   const runBayesianExperiment = async () => {
@@ -146,13 +170,15 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
       flagKey: customFlagKey,
       metricKeys: metricKeysArray,
       defaultValue: false,
+      customTrueProbability: customTrueProbability,
+      customFalseProbability: customFalseProbability,
     });
   };
 
   return (
     <>
       {/* Predefined Experiments */}
-      <div className="mb-8 bg-white p-6 rounded-lg shadow-md">
+      {/* <div className="mb-8 bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold text-gray-700 mb-4">
           Predefined Experiments
         </h2>
@@ -180,7 +206,7 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
             {isRunning ? 'Running...' : 'Frequentist (1000 runs)'}
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Custom Experiment Generator */}
       <div className="mb-8 bg-white p-6 rounded-lg shadow-md">
@@ -240,6 +266,52 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
+        <div className="grid md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label
+              htmlFor="trueProbability"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              True Probability (%):
+            </label>
+            <input
+              type="number"
+              id="trueProbability"
+              value={customTrueProbability}
+              onChange={e =>
+                handleTrueProbabilityChange(parseInt(e.target.value) || 60)
+              }
+              min="0"
+              max="100"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Probability of tracking metrics when flag is true
+            </p>
+          </div>
+          <div>
+            <label
+              htmlFor="falseProbability"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              False Probability (%):
+            </label>
+            <input
+              type="number"
+              id="falseProbability"
+              value={customFalseProbability}
+              onChange={e =>
+                handleFalseProbabilityChange(parseInt(e.target.value) || 30)
+              }
+              min="0"
+              max="100"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Probability of tracking metrics when flag is false
+            </p>
+          </div>
+        </div>
         <div className="flex gap-4">
           <button
             onClick={() => runCustomExperiment('bayesian')}
@@ -250,9 +322,9 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
                 : 'bg-green-600 hover:bg-green-700 text-white focus:ring-green-500'
             }`}
           >
-            Run Bayesian Experiment
+            Run Experiment
           </button>
-          <button
+          {/* <button
             onClick={() => runCustomExperiment('frequentist')}
             disabled={isRunning || !customFlagKey || !customMetricKeys}
             className={`px-4 py-2 font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
@@ -262,7 +334,7 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
             }`}
           >
             Run Frequentist Experiment
-          </button>
+          </button> */}
         </div>
       </div>
 
