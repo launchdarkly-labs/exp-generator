@@ -12,6 +12,58 @@ const probablityExperimentTypeSearchEngine = {
   frequentist: { trueProbablity: 52, falseProbablity: 60 },
 };
 
+export const generateCustomFeatureExperimentResults = async ({
+  client,
+  updateContext,
+  setProgress,
+  setExpGenerator,
+  experimentTypeObj,
+  flagKey,
+  metricKeys,
+  defaultValue = false,
+}: {
+  client: any;
+  updateContext: () => void;
+  setProgress: React.Dispatch<React.SetStateAction<number>>;
+  setExpGenerator: React.Dispatch<React.SetStateAction<boolean>>;
+  experimentTypeObj: { experimentType: string; numOfRuns: number };
+  flagKey: string;
+  metricKeys: string[];
+  defaultValue?: boolean | string | number;
+}): Promise<void> => {
+  setProgress(0);
+
+  for (let i = 0; i < experimentTypeObj.numOfRuns; i++) {
+    const flagVariation = client?.variation(flagKey, defaultValue);
+    console.log(`${flagKey}:`, flagVariation);
+
+    // Generate different metrics based on flag variation
+    if (flagVariation) {
+      // Winner variation - better metrics
+      for (const metricKey of metricKeys) {
+        const metricValue = Math.floor(Math.random() * (500 - 300 + 1)) + 700;
+        await client?.track(metricKey, undefined, metricValue);
+        await client?.flush();
+      }
+    } else {
+      // Control variation - baseline metrics
+      for (const metricKey of metricKeys) {
+        const metricValue = Math.floor(Math.random() * (300 - 200 + 1)) + 200;
+        await client?.track(metricKey, undefined, metricValue);
+        await client?.flush();
+      }
+    }
+
+    setProgress(
+      (prevProgress: number) =>
+        prevProgress + (1 / experimentTypeObj.numOfRuns) * 100
+    );
+    await wait(waitTime);
+    await updateContext();
+  }
+  setExpGenerator(false);
+};
+
 export const generateSuggestedItemsFeatureExperimentResults = async ({
   client,
   updateContext,

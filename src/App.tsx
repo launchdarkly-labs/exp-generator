@@ -4,7 +4,8 @@ import {
   useFlags,
   useLDClient,
 } from 'launchdarkly-react-client-sdk';
-import { generateSuggestedItemsFeatureExperimentResults } from './lib/featureExperimentGeneratorFunctions';
+import ExperimentGenerator from './components/ExperimentGenerator';
+import LaunchDarklyConfig from './components/LaunchDarklyConfig';
 import {
   LAUNCH_CLUB_PLATINUM,
   PERSONA_TIER_STANDARD,
@@ -32,7 +33,6 @@ function AppContent() {
   const flags = useFlags();
   const client = useLDClient();
 
-  const [clientId, setClientId] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -100,62 +100,6 @@ function AppContent() {
     await client?.identify(newContext);
   };
 
-  // Load client ID from localStorage on component mount
-  useEffect(() => {
-    const savedClientId = localStorage.getItem('launchdarkly-client-id');
-    if (savedClientId) {
-      setClientId(savedClientId);
-    }
-  }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Client ID submitted:', clientId);
-
-    // Save to localStorage
-    localStorage.setItem('launchdarkly-client-id', clientId);
-    console.log('Client ID saved to localStorage');
-
-    // Reload the page to reinitialize LaunchDarkly with new client ID
-    window.location.reload();
-  };
-
-  const runBayesianExperiment = async () => {
-    if (!client || isRunning) return;
-
-    setIsRunning(true);
-    setProgress(0);
-
-    await generateSuggestedItemsFeatureExperimentResults({
-      client,
-      updateContext: updateUserContext,
-      setProgress,
-      setExpGenerator: setIsRunning,
-      experimentTypeObj: {
-        experimentType: 'bayesian',
-        numOfRuns: 500,
-      },
-    });
-  };
-
-  const runFrequentistExperiment = async () => {
-    if (!client || isRunning) return;
-
-    setIsRunning(true);
-    setProgress(0);
-
-    await generateSuggestedItemsFeatureExperimentResults({
-      client,
-      updateContext: updateUserContext,
-      setProgress,
-      setExpGenerator: setIsRunning,
-      experimentTypeObj: {
-        experimentType: 'frequentist',
-        numOfRuns: 1000,
-      },
-    });
-  };
-
   return (
     <div className="p-5 min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="max-w-4xl mx-auto">
@@ -163,79 +107,16 @@ function AppContent() {
           LaunchDarkly Experiment Generator
         </h1>
 
-        <form
-          onSubmit={handleSubmit}
-          className="mb-8 bg-white p-6 rounded-lg shadow-md"
-        >
-          <h2 className="text-xl font-semibold text-gray-700 mb-4">
-            LaunchDarkly Configuration
-          </h2>
-          <div className="mb-4">
-            <label
-              htmlFor="clientId"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Client ID:
-            </label>
-            <input
-              type="text"
-              id="clientId"
-              value={clientId}
-              onChange={e => setClientId(e.target.value)}
-              placeholder="Enter your LaunchDarkly client-side ID"
-              className="w-80 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Update Client ID
-          </button>
-        </form>
+        <LaunchDarklyConfig />
 
-        <div className="mb-8 bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold text-gray-700 mb-4">
-            Experiment Generator
-          </h2>
-          <div className="flex gap-4 mb-4">
-            <button
-              onClick={runBayesianExperiment}
-              disabled={isRunning}
-              className={`px-4 py-2 font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                isRunning
-                  ? 'bg-gray-500 cursor-not-allowed text-white'
-                  : 'bg-green-600 hover:bg-green-700 text-white focus:ring-green-500'
-              }`}
-            >
-              {isRunning ? 'Running...' : 'Bayesian (500 runs)'}
-            </button>
-            <button
-              onClick={runFrequentistExperiment}
-              disabled={isRunning}
-              className={`px-4 py-2 font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                isRunning
-                  ? 'bg-gray-500 cursor-not-allowed text-white'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500'
-              }`}
-            >
-              {isRunning ? 'Running...' : 'Frequentist (1000 runs)'}
-            </button>
-          </div>
-          {isRunning && (
-            <div className="mt-4">
-              <div className="text-sm text-gray-600 mb-2">
-                Progress: {Math.round(progress)}%
-              </div>
-              <div className="w-80 h-5 bg-gray-200 rounded-md overflow-hidden">
-                <div
-                  className="h-full bg-blue-600 transition-all duration-300 ease-out"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
+        <ExperimentGenerator
+          client={client}
+          updateUserContext={updateUserContext}
+          isRunning={isRunning}
+          setIsRunning={setIsRunning}
+          progress={progress}
+          setProgress={setProgress}
+        />
 
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">
