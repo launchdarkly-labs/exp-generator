@@ -5,14 +5,100 @@ import {
   useLDClient,
 } from 'launchdarkly-react-client-sdk';
 import { generateSuggestedItemsFeatureExperimentResults } from './lib/featureExperimentGeneratorFunctions';
+import {
+  LAUNCH_CLUB_PLATINUM,
+  PERSONA_TIER_STANDARD,
+  PERSONA_ROLE_BETA,
+  PERSONA_ROLE_DEVELOPER,
+  PERSONA_TIER_PLATINUM,
+  PERSONA_ROLE_USER,
+  LAUNCH_CLUB_STANDARD,
+  AIRPLANES,
+} from './lib/constants';
+import { STARTER_PERSONAS } from './lib/StarterUserPersonas';
+import {
+  isAndroid,
+  isIOS,
+  isBrowser,
+  isMobile,
+  isMacOs,
+  isWindows,
+} from 'react-device-detect';
+
+import { v4 as uuidv4 } from 'uuid';
 
 // Inner component that uses LaunchDarkly hooks
 function AppContent() {
   const flags = useFlags();
   const client = useLDClient();
+
   const [clientId, setClientId] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  const updateUserContext = async (): Promise<void> => {
+    const context = await client?.getContext();
+
+    const newLocation = `America/${
+      ['New_York', 'Chicago', 'Los_Angeles', 'Denver'][
+        Math.floor(Math.random() * 4)
+      ]
+    }`;
+
+    const newDevice = Math.random() < 0.5 ? 'Mobile' : 'Desktop';
+
+    const osOptions =
+      newDevice === 'Mobile' ? ['iOS', 'Android'] : ['macOS', 'Windows'];
+    const newAirplane = AIRPLANES[Math.floor(Math.random() * AIRPLANES.length)];
+
+    const newContext = {
+      ...context,
+      user: {
+        ...context.user,
+        anonymous: false,
+        key: uuidv4().slice(0, 10),
+        name: STARTER_PERSONAS[
+          Math.floor(Math.random() * STARTER_PERSONAS.length)
+        ].personaname,
+        email:
+          STARTER_PERSONAS[Math.floor(Math.random() * STARTER_PERSONAS.length)]
+            .personaemail,
+        role: [PERSONA_ROLE_USER, PERSONA_ROLE_BETA, PERSONA_ROLE_DEVELOPER][
+          Math.floor(Math.random() * 3)
+        ],
+        tier: [PERSONA_TIER_STANDARD, PERSONA_TIER_PLATINUM][
+          Math.floor(Math.random() * 2)
+        ],
+        launchclub:
+          Math.random() < 0.5 ? LAUNCH_CLUB_STANDARD : LAUNCH_CLUB_PLATINUM,
+      },
+      device: {
+        ...context.device,
+        key: uuidv4().slice(0, 10),
+        name: newDevice,
+        operating_system:
+          osOptions[Math.floor(Math.random() * osOptions.length)],
+        platform: newDevice,
+      },
+      location: {
+        ...context.location,
+        key: newLocation,
+        name: newLocation,
+        timeZone: newLocation,
+        country: 'US',
+      },
+      experience: {
+        ...context.experience,
+        key: newAirplane,
+        name: newAirplane,
+        airplane: newAirplane,
+      },
+      audience: { ...context.audience, key: uuidv4().slice(0, 10) },
+    };
+
+    console.log('updateUserContext', newContext);
+    await client?.identify(newContext);
+  };
 
   // Load client ID from localStorage on component mount
   useEffect(() => {
@@ -21,8 +107,6 @@ function AppContent() {
       setClientId(savedClientId);
     }
   }, []);
-
-  console.log('All LaunchDarkly flags:', flags);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +128,7 @@ function AppContent() {
 
     await generateSuggestedItemsFeatureExperimentResults({
       client,
-      updateContext: () => Promise.resolve(),
+      updateContext: updateUserContext,
       setProgress,
       setExpGenerator: setIsRunning,
       experimentTypeObj: {
@@ -62,7 +146,7 @@ function AppContent() {
 
     await generateSuggestedItemsFeatureExperimentResults({
       client,
-      updateContext: () => Promise.resolve(),
+      updateContext: updateUserContext,
       setProgress,
       setExpGenerator: setIsRunning,
       experimentTypeObj: {
@@ -190,12 +274,33 @@ function getClientId() {
   );
 }
 
+// Wrap AppContent with LoginProvider
+const AppWithLoginProvider = () => {
+  return <AppContent />;
+};
+
 // Export the app wrapped with LaunchDarkly provider using dynamic client ID
+const operatingSystem = isAndroid
+  ? 'Android'
+  : isIOS
+    ? 'iOS'
+    : isWindows
+      ? 'Windows'
+      : isMacOs
+        ? 'macOS'
+        : '';
+const device = isMobile ? 'Mobile' : isBrowser ? 'Desktop' : '';
 const App = withLDProvider({
   clientSideID: getClientId(),
-  user: {
-    key: 'user-key',
-    name: 'Example User',
+  context: {
+    kind: 'multi',
+    user: {
+      anonymous: true,
+      key: uuidv4().slice(0, 10),
+      device: device,
+      operating_system: operatingSystem,
+      location: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    },
   },
   reactOptions: {
     useCamelCaseFlagKeys: false,
@@ -210,6 +315,6 @@ const App = withLDProvider({
     eventCapacity: 1000,
     privateAttributes: ['email', 'name'],
   },
-})(AppContent);
+})(AppWithLoginProvider);
 
 export default App;

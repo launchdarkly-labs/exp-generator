@@ -34,6 +34,7 @@ export const generateSuggestedItemsFeatureExperimentResults = async ({
       'cartSuggestedItems',
       false
     );
+    console.log('cartSuggestedItems', cartSuggestedItems);
     if (cartSuggestedItems) {
       //winner
       totalPrice = Math.floor(Math.random() * (500 - 300 + 1)) + 700;
