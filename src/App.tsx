@@ -157,109 +157,95 @@ function AppContent() {
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Hello</h1>
+    <div className="p-5 min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-800 mb-8">
+          LaunchDarkly Experiment Generator
+        </h1>
 
-      <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
-        <h2>LaunchDarkly Configuration</h2>
-        <div style={{ marginBottom: '10px' }}>
-          <label
-            htmlFor="clientId"
-            style={{ display: 'block', marginBottom: '5px' }}
-          >
-            Client ID:
-          </label>
-          <input
-            type="text"
-            id="clientId"
-            value={clientId}
-            onChange={e => setClientId(e.target.value)}
-            placeholder="Enter your LaunchDarkly client-side ID"
-            style={{
-              width: '300px',
-              padding: '8px',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-            }}
-          />
-        </div>
-        <button
-          type="submit"
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
+        <form
+          onSubmit={handleSubmit}
+          className="mb-8 bg-white p-6 rounded-lg shadow-md"
         >
-          Update Client ID
-        </button>
-      </form>
-
-      <div style={{ marginBottom: '20px' }}>
-        <h2>Experiment Generator</h2>
-        <div style={{ marginBottom: '10px' }}>
-          <button
-            onClick={runBayesianExperiment}
-            disabled={isRunning}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: isRunning ? '#6c757d' : '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: isRunning ? 'not-allowed' : 'pointer',
-              marginRight: '10px',
-            }}
-          >
-            {isRunning ? 'Running...' : 'Bayesian (500 runs)'}
-          </button>
-          <button
-            onClick={runFrequentistExperiment}
-            disabled={isRunning}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: isRunning ? '#6c757d' : '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: isRunning ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {isRunning ? 'Running...' : 'Frequentist (1000 runs)'}
-          </button>
-        </div>
-        {isRunning && (
-          <div style={{ marginTop: '10px' }}>
-            <div style={{ fontSize: '14px', marginBottom: '5px' }}>
-              Progress: {Math.round(progress)}%
-            </div>
-            <div
-              style={{
-                width: '300px',
-                height: '20px',
-                backgroundColor: '#e9ecef',
-                borderRadius: '4px',
-                overflow: 'hidden',
-              }}
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">
+            LaunchDarkly Configuration
+          </h2>
+          <div className="mb-4">
+            <label
+              htmlFor="clientId"
+              className="block text-sm font-medium text-gray-700 mb-2"
             >
-              <div
-                style={{
-                  width: `${progress}%`,
-                  height: '100%',
-                  backgroundColor: '#007bff',
-                  transition: 'width 0.3s ease',
-                }}
-              />
-            </div>
+              Client ID:
+            </label>
+            <input
+              type="text"
+              id="clientId"
+              value={clientId}
+              onChange={e => setClientId(e.target.value)}
+              placeholder="Enter your LaunchDarkly client-side ID"
+              className="w-80 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
-        )}
-      </div>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            Update Client ID
+          </button>
+        </form>
 
-      <h2>All LaunchDarkly Flags:</h2>
-      <pre>{JSON.stringify(flags, null, 2)}</pre>
+        <div className="mb-8 bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">
+            Experiment Generator
+          </h2>
+          <div className="flex gap-4 mb-4">
+            <button
+              onClick={runBayesianExperiment}
+              disabled={isRunning}
+              className={`px-4 py-2 font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                isRunning
+                  ? 'bg-gray-500 cursor-not-allowed text-white'
+                  : 'bg-green-600 hover:bg-green-700 text-white focus:ring-green-500'
+              }`}
+            >
+              {isRunning ? 'Running...' : 'Bayesian (500 runs)'}
+            </button>
+            <button
+              onClick={runFrequentistExperiment}
+              disabled={isRunning}
+              className={`px-4 py-2 font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                isRunning
+                  ? 'bg-gray-500 cursor-not-allowed text-white'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500'
+              }`}
+            >
+              {isRunning ? 'Running...' : 'Frequentist (1000 runs)'}
+            </button>
+          </div>
+          {isRunning && (
+            <div className="mt-4">
+              <div className="text-sm text-gray-600 mb-2">
+                Progress: {Math.round(progress)}%
+              </div>
+              <div className="w-80 h-5 bg-gray-200 rounded-md overflow-hidden">
+                <div
+                  className="h-full bg-blue-600 transition-all duration-300 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">
+            All LaunchDarkly Flags
+          </h2>
+          <pre className="bg-gray-100 p-4 rounded-md overflow-auto text-sm text-gray-800">
+            {JSON.stringify(flags, null, 2)}
+          </pre>
+        </div>
+      </div>
     </div>
   );
 }
