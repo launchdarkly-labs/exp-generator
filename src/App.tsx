@@ -35,9 +35,12 @@ function AppContent() {
 
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentUserContext, setCurrentUserContext] = useState<any>(null);
+  const [updatedUserContext, setUpdatedUserContext] = useState<any>(null);
 
   const updateUserContext = async (): Promise<void> => {
     const context = await client?.getContext();
+    setCurrentUserContext(context);
 
     const newLocation = `America/${
       ['New_York', 'Chicago', 'Los_Angeles', 'Denver'][
@@ -54,7 +57,7 @@ function AppContent() {
     const newContext = {
       ...context,
       user: {
-        ...context.user,
+        ...(context as any)?.user,
         anonymous: false,
         key: uuidv4().slice(0, 10),
         name: STARTER_PERSONAS[
@@ -73,7 +76,7 @@ function AppContent() {
           Math.random() < 0.5 ? LAUNCH_CLUB_STANDARD : LAUNCH_CLUB_PLATINUM,
       },
       device: {
-        ...context.device,
+        ...(context as any)?.device,
         key: uuidv4().slice(0, 10),
         name: newDevice,
         operating_system:
@@ -81,23 +84,24 @@ function AppContent() {
         platform: newDevice,
       },
       location: {
-        ...context.location,
+        ...(context as any)?.location,
         key: newLocation,
         name: newLocation,
         timeZone: newLocation,
         country: 'US',
       },
       experience: {
-        ...context.experience,
+        ...(context as any)?.experience,
         key: newAirplane,
         name: newAirplane,
         airplane: newAirplane,
       },
-      audience: { ...context.audience, key: uuidv4().slice(0, 10) },
+      audience: { ...(context as any)?.audience, key: uuidv4().slice(0, 10) },
     };
 
     console.log('updateUserContext', newContext);
-    await client?.identify(newContext);
+    setUpdatedUserContext(newContext);
+    await client?.identify(newContext as any);
   };
 
   return (
@@ -118,13 +122,41 @@ function AppContent() {
           setProgress={setProgress}
         />
 
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">
             All LaunchDarkly Flags
           </h2>
           <pre className="bg-gray-100 p-4 rounded-md overflow-auto text-sm text-gray-800">
             {JSON.stringify(flags, null, 2)}
           </pre>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">
+            User Context Information
+          </h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-lg font-medium text-gray-600 mb-3">
+                Current User Context
+              </h3>
+              <pre className="bg-gray-100 p-4 rounded-md overflow-auto text-sm text-gray-800 max-h-96">
+                {currentUserContext
+                  ? JSON.stringify(currentUserContext, null, 2)
+                  : 'No context loaded yet'}
+              </pre>
+            </div>
+            <div>
+              <h3 className="text-lg font-medium text-gray-600 mb-3">
+                Updated User Context
+              </h3>
+              <pre className="bg-gray-100 p-4 rounded-md overflow-auto text-sm text-gray-800 max-h-96">
+                {updatedUserContext
+                  ? JSON.stringify(updatedUserContext, null, 2)
+                  : 'No updates made yet'}
+              </pre>
+            </div>
+          </div>
         </div>
       </div>
     </div>

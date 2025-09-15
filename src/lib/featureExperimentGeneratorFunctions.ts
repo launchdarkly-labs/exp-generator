@@ -1,6 +1,6 @@
 import { wait } from './utils';
 
-const waitTime = 0.0005;
+const waitTime = 0.005;
 
 const probablityExperimentType = {
   bayesian: { trueProbablity: 60, falseProbablity: 30 },
@@ -112,9 +112,7 @@ export const generateSuggestedItemsFeatureExperimentResults = async ({
       'cartSuggestedItems',
       false
     );
-    console.log('cartSuggestedItems', cartSuggestedItems);
-    console.log('client', client);
-    console.log('updateContext', updateContext);
+
     if (cartSuggestedItems) {
       //winner
       totalPrice = Math.floor(Math.random() * (500 - 300 + 1)) + 700;

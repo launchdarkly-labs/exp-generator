@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  generateSuggestedItemsFeatureExperimentResults,
+  //   generateSuggestedItemsFeatureExperimentResults,
   generateCustomFeatureExperimentResults,
 } from '../lib/featureExperimentGeneratorFunctions';
 
@@ -93,51 +93,51 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
     localStorage.setItem('custom-false-probability', value.toString());
   };
 
-  const runBayesianExperiment = async () => {
-    if (!client || isRunning) return;
+  //   const runBayesianExperiment = async () => {
+  //     if (!client || isRunning) return;
 
-    setIsRunning(true);
-    setProgress(0);
-    setExperimentState({
-      currentRun: 0,
-      totalRuns: 500,
-      experimentType: 'Bayesian',
-    });
+  //     setIsRunning(true);
+  //     setProgress(0);
+  //     setExperimentState({
+  //       currentRun: 0,
+  //       totalRuns: 500,
+  //       experimentType: 'Bayesian',
+  //     });
 
-    await generateSuggestedItemsFeatureExperimentResults({
-      client,
-      updateContext: updateUserContext,
-      setProgress,
-      setExpGenerator: setIsRunning,
-      experimentTypeObj: {
-        experimentType: 'bayesian',
-        numOfRuns: 500,
-      },
-    });
-  };
+  //     await generateSuggestedItemsFeatureExperimentResults({
+  //       client,
+  //       updateContext: updateUserContext,
+  //       setProgress,
+  //       setExpGenerator: setIsRunning,
+  //       experimentTypeObj: {
+  //         experimentType: 'bayesian',
+  //         numOfRuns: 500,
+  //       },
+  //     });
+  //   };
 
-  const runFrequentistExperiment = async () => {
-    if (!client || isRunning) return;
+  //   const runFrequentistExperiment = async () => {
+  //     if (!client || isRunning) return;
 
-    setIsRunning(true);
-    setProgress(0);
-    setExperimentState({
-      currentRun: 0,
-      totalRuns: 1000,
-      experimentType: 'Frequentist',
-    });
+  //     setIsRunning(true);
+  //     setProgress(0);
+  //     setExperimentState({
+  //       currentRun: 0,
+  //       totalRuns: 1000,
+  //       experimentType: 'Frequentist',
+  //     });
 
-    await generateSuggestedItemsFeatureExperimentResults({
-      client,
-      updateContext: updateUserContext,
-      setProgress,
-      setExpGenerator: setIsRunning,
-      experimentTypeObj: {
-        experimentType: 'frequentist',
-        numOfRuns: 1000,
-      },
-    });
-  };
+  //     await generateSuggestedItemsFeatureExperimentResults({
+  //       client,
+  //       updateContext: updateUserContext,
+  //       setProgress,
+  //       setExpGenerator: setIsRunning,
+  //       experimentTypeObj: {
+  //         experimentType: 'frequentist',
+  //         numOfRuns: 1000,
+  //       },
+  //     });
+  //   };
 
   const runCustomExperiment = async (
     experimentType: 'bayesian' | 'frequentist'
@@ -213,6 +213,12 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
         <h2 className="text-xl font-semibold text-gray-700 mb-4">
           Custom Experiment Generator
         </h2>
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-sm text-blue-700">
+            <strong>Note:</strong> This generator currently only works with
+            feature experimentation and not funnel experimentation.
+          </p>
+        </div>
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div>
             <label
