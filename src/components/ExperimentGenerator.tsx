@@ -32,6 +32,12 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
   const [customNumRuns, setCustomNumRuns] = useState(100);
   const [customTrueProbability, setCustomTrueProbability] = useState(60);
   const [customFalseProbability, setCustomFalseProbability] = useState(30);
+  const [customTrueMetricValue, setCustomTrueMetricValue] = useState<
+    number | ''
+  >('');
+  const [customFalseMetricValue, setCustomFalseMetricValue] = useState<
+    number | ''
+  >('');
   const [experimentState, setExperimentState] = useState<ExperimentState>({
     currentRun: 0,
     totalRuns: 0,
@@ -49,6 +55,12 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
     const savedFalseProbability = localStorage.getItem(
       'custom-false-probability'
     );
+    const savedTrueMetricValue = localStorage.getItem(
+      'custom-true-metric-value'
+    );
+    const savedFalseMetricValue = localStorage.getItem(
+      'custom-false-metric-value'
+    );
 
     if (savedFlagKey) {
       setCustomFlagKey(savedFlagKey);
@@ -64,6 +76,18 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
     }
     if (savedFalseProbability) {
       setCustomFalseProbability(parseInt(savedFalseProbability) || 30);
+    }
+    if (savedTrueMetricValue) {
+      setCustomTrueMetricValue(
+        savedTrueMetricValue === '' ? '' : parseInt(savedTrueMetricValue) || ''
+      );
+    }
+    if (savedFalseMetricValue) {
+      setCustomFalseMetricValue(
+        savedFalseMetricValue === ''
+          ? ''
+          : parseInt(savedFalseMetricValue) || ''
+      );
     }
   }, []);
 
@@ -91,6 +115,16 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
   const handleFalseProbabilityChange = (value: number) => {
     setCustomFalseProbability(value);
     localStorage.setItem('custom-false-probability', value.toString());
+  };
+
+  const handleTrueMetricValueChange = (value: number | '') => {
+    setCustomTrueMetricValue(value);
+    localStorage.setItem('custom-true-metric-value', value.toString());
+  };
+
+  const handleFalseMetricValueChange = (value: number | '') => {
+    setCustomFalseMetricValue(value);
+    localStorage.setItem('custom-false-metric-value', value.toString());
   };
 
   //   const runBayesianExperiment = async () => {
@@ -172,6 +206,10 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
       defaultValue: false,
       customTrueProbability: customTrueProbability,
       customFalseProbability: customFalseProbability,
+      customTrueMetricValue:
+        customTrueMetricValue === '' ? undefined : customTrueMetricValue,
+      customFalseMetricValue:
+        customFalseMetricValue === '' ? undefined : customFalseMetricValue,
     });
   };
 
@@ -315,6 +353,58 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
             />
             <p className="text-xs text-gray-500 mt-1">
               Probability of tracking metrics when flag is false
+            </p>
+          </div>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label
+              htmlFor="trueMetricValue"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              True Metric Value:
+            </label>
+            <input
+              type="number"
+              id="trueMetricValue"
+              value={customTrueMetricValue}
+              onChange={e =>
+                handleTrueMetricValueChange(
+                  e.target.value === '' ? '' : parseInt(e.target.value) || ''
+                )
+              }
+              min="0"
+              placeholder="Leave blank if the metric doesn't need a value"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Metric value (unit measurement like $, ms, etc.) to track when
+              flag is true
+            </p>
+          </div>
+          <div>
+            <label
+              htmlFor="falseMetricValue"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              False Metric Value:
+            </label>
+            <input
+              type="number"
+              id="falseMetricValue"
+              value={customFalseMetricValue}
+              onChange={e =>
+                handleFalseMetricValueChange(
+                  e.target.value === '' ? '' : parseInt(e.target.value) || ''
+                )
+              }
+              min="0"
+              placeholder="Leave blank if the metric doesn't need a value"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Metric value (unit measurement like $, ms, etc.) to track when
+              flag is false
             </p>
           </div>
         </div>

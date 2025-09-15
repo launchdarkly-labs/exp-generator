@@ -23,6 +23,8 @@ export const generateCustomFeatureExperimentResults = async ({
   defaultValue = false,
   customTrueProbability,
   customFalseProbability,
+  customTrueMetricValue,
+  customFalseMetricValue,
 }: {
   client: any;
   updateContext: () => void;
@@ -34,6 +36,8 @@ export const generateCustomFeatureExperimentResults = async ({
   defaultValue?: boolean | string | number;
   customTrueProbability?: number;
   customFalseProbability?: number;
+  customTrueMetricValue?: number;
+  customFalseMetricValue?: number;
 }): Promise<void> => {
   setProgress(0);
 
@@ -56,8 +60,13 @@ export const generateCustomFeatureExperimentResults = async ({
 
       if (probability < trueProbThreshold) {
         for (const metricKey of metricKeys) {
-          const metricValue = Math.floor(Math.random() * (500 - 300 + 1)) + 700;
-          await client?.track(metricKey, undefined, metricValue);
+          const metricValue =
+            customTrueMetricValue !== undefined
+              ? Math.floor(customTrueMetricValue * Math.random())
+              : '';
+          (await metricValue) !== ''
+            ? client?.track(metricKey, undefined, metricValue)
+            : client?.track(metricKey);
           await client?.flush();
         }
       }
@@ -73,8 +82,13 @@ export const generateCustomFeatureExperimentResults = async ({
 
       if (probability < falseProbThreshold) {
         for (const metricKey of metricKeys) {
-          const metricValue = Math.floor(Math.random() * (300 - 200 + 1)) + 200;
-          await client?.track(metricKey, undefined, metricValue);
+          const metricValue =
+            customFalseMetricValue !== undefined
+              ? Math.floor(customFalseMetricValue * Math.random())
+              : '';
+          (await metricValue) !== ''
+            ? client?.track(metricKey, undefined, metricValue)
+            : client?.track(metricKey);
           await client?.flush();
         }
       }
