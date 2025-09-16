@@ -19,12 +19,10 @@ export const generateCustomFeatureExperimentResults = async ({
   setExpGenerator,
   experimentTypeObj,
   flagKey,
-  metricKeys,
+  metricValues,
   defaultValue = false,
   customTrueProbability,
   customFalseProbability,
-  customTrueMetricValue,
-  customFalseMetricValue,
 }: {
   client: any;
   updateContext: () => void;
@@ -32,12 +30,14 @@ export const generateCustomFeatureExperimentResults = async ({
   setExpGenerator: React.Dispatch<React.SetStateAction<boolean>>;
   experimentTypeObj: { experimentType: string; numOfRuns: number };
   flagKey: string;
-  metricKeys: string[];
+  metricValues: {
+    key: string;
+    trueValue: number | '';
+    falseValue: number | '';
+  }[];
   defaultValue?: boolean | string | number;
   customTrueProbability?: number;
   customFalseProbability?: number;
-  customTrueMetricValue?: number;
-  customFalseMetricValue?: number;
 }): Promise<void> => {
   setProgress(0);
 
@@ -59,11 +59,12 @@ export const generateCustomFeatureExperimentResults = async ({
             ]['trueProbablity'];
 
       if (probability < trueProbThreshold) {
-        for (const metricKey of metricKeys) {
+        for (const metricKey of metricValues) {
           const metricValue =
-            customTrueMetricValue !== undefined
-              ? Math.floor(customTrueMetricValue * Math.random())
+            metricKey.trueValue !== ''
+              ? Math.floor(Number(metricKey.trueValue) * Math.random())
               : '';
+
           (await metricValue) !== ''
             ? client?.track(metricKey, undefined, metricValue)
             : client?.track(metricKey);
@@ -81,11 +82,12 @@ export const generateCustomFeatureExperimentResults = async ({
             ]['falseProbablity'];
 
       if (probability < falseProbThreshold) {
-        for (const metricKey of metricKeys) {
+        for (const metricKey of metricValues) {
           const metricValue =
-            customFalseMetricValue !== undefined
-              ? Math.floor(customFalseMetricValue * Math.random())
+            metricKey.falseValue !== ''
+              ? Math.floor(Number(metricKey.falseValue) * Math.random())
               : '';
+
           (await metricValue) !== ''
             ? client?.track(metricKey, undefined, metricValue)
             : client?.track(metricKey);
