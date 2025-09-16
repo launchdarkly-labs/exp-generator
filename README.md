@@ -4,13 +4,37 @@ A modern React application built with LaunchDarkly feature flags, Tailwind CSS, 
 
 ## Features
 
+### 🧪 **Experiment Generation**
+
+- **Custom Feature Experiments**: Generate realistic A/B test data for LaunchDarkly feature flags
+- **Multiple Metrics**: Configure multiple metrics with individual true/false values per metric
+- **Probability Control**: Set custom probability percentages for metric tracking (true/false variations)
+- **Flexible Configuration**: Support for both custom metric values and randomized defaults
+- **Real-time Progress**: Live progress tracking with current run count and experiment status
+
+### ⚙️ **Configuration Options**
+
+- **LaunchDarkly Integration**: Input your client-side ID directly in the UI
+- **Dynamic Metrics**: Add/remove metric rows with individual value configuration
+- **Experiment Types**: Support for Bayesian and Frequentist experiment simulations
+- **Persistent Settings**: All configurations saved to localStorage for convenience
+- **User Context Tracking**: Display current and updated LaunchDarkly user context
+
+### 🎯 **Internal Tool Features**
+
+- **Staging Environment Only**: Designed for internal use in staging environments
+- **Feature Experimentation Focus**: Currently supports feature experiments (not funnel experiments)
+- **Context Visualization**: Real-time display of LaunchDarkly user context changes
+- **Flag Management**: View all active LaunchDarkly flags in your environment
+
+### 🛠️ **Technical Stack**
+
 - ⚛️ React 18 with modern hooks and TypeScript
-- 🚩 LaunchDarkly SDK for feature flags
-- 🎨 Tailwind CSS for styling
-- 🧩 shadcn/ui components (v0.dev ready)
-- 📱 Responsive design
-- 🔧 Ready-to-use development environment
-- ✨ Full v0.dev integration support
+- 🚩 LaunchDarkly SDK for feature flags and experiment data generation
+- 🎨 Tailwind CSS for responsive styling
+- 🧩 shadcn/ui components (v0.dev compatible)
+- 📱 Fully responsive design with semantic HTML
+- ♿ Accessibility-focused with proper ARIA support
 
 ## Getting Started
 
@@ -22,6 +46,7 @@ A modern React application built with LaunchDarkly feature flags, Tailwind CSS, 
 ### Installation
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
@@ -29,8 +54,8 @@ npm install
 2. Set up LaunchDarkly:
    - Copy `env.example` to `.env`
    - Replace the placeholder with your LaunchDarkly client-side ID
-   
 3. Start the development server:
+
 ```bash
 npm start
 ```
@@ -76,6 +101,7 @@ This project is fully configured for shadcn/ui and v0.dev:
 ### Adding More Components
 
 To add more shadcn/ui components, you can either:
+
 - Use v0.dev to generate them
 - Manually copy from the [shadcn/ui documentation](https://ui.shadcn.com)
 
