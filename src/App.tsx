@@ -123,56 +123,62 @@ function AppContent() {
   return (
     <div className="p-5 min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">
-          LaunchDarkly Experiment Generator
-        </h1>
+        <header className="app-header mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            LaunchDarkly Experiment Generator
+          </h1>
 
-        <div className="mb-8 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-md">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg
-                className="h-5 w-5 text-yellow-400"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-yellow-700">
-                <strong>Internal Use Only:</strong> This experiment generator is
-                intended for internal use in staging environments only. Please
-                do not use in production environments.
-              </p>
+          <div className="internal-use-notice mb-8 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-md">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-yellow-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  <strong>Internal Use Only:</strong> This experiment generator
+                  is intended for internal use in staging environments only.
+                  Please do not use in production environments.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        <LaunchDarklyConfig />
+        <section className="launchdarkly-configuration">
+          <LaunchDarklyConfig />
+        </section>
 
-        <ExperimentGenerator
-          client={client}
-          updateUserContext={updateUserContext}
-          isRunning={isRunning}
-          setIsRunning={setIsRunning}
-          progress={progress}
-          setProgress={setProgress}
-        />
+        <section className="experiment-generator-section">
+          <ExperimentGenerator
+            client={client}
+            updateUserContext={updateUserContext}
+            isRunning={isRunning}
+            setIsRunning={setIsRunning}
+            progress={progress}
+            setProgress={setProgress}
+          />
+        </section>
 
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+        <section className="flags-display bg-white p-6 rounded-lg shadow-md mb-8">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">
             All LaunchDarkly Flags
           </h2>
           <pre className="bg-gray-100 p-4 rounded-md overflow-auto text-sm text-gray-800">
             {JSON.stringify(flags, null, 2)}
           </pre>
-        </div>
+        </section>
 
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <section className="user-context-display bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">
             User Context Information
           </h2>
@@ -198,7 +204,7 @@ function AppContent() {
               </pre>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
