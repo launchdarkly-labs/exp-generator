@@ -15,6 +15,46 @@ const FIRST_NAMES = [
   'Quinn',
   'Jamie',
   'Drew',
+  'Alex',
+  'Cameron',
+  'Dakota',
+  'Emerson',
+  'Finley',
+  'Hayden',
+  'Kendall',
+  'Logan',
+  'Marley',
+  'Nico',
+  'Peyton',
+  'Reese',
+  'Rowan',
+  'Sawyer',
+  'Skyler',
+  'Addison',
+  'Bailey',
+  'Charlie',
+  'Devin',
+  'Elliot',
+  'Frankie',
+  'Harper',
+  'Indigo',
+  'Jules',
+  'Kai',
+  'Lennon',
+  'Micah',
+  'Noel',
+  'Oakley',
+  'Phoenix',
+  'Remy',
+  'River',
+  'Sage',
+  'Spencer',
+  'Tatum',
+  'Wren',
+  'Zion',
+  'Blake',
+  'Cody',
+  'Shiloh',
 ] as const;
 
 const LAST_NAMES = [
@@ -28,17 +68,56 @@ const LAST_NAMES = [
   'Johnson',
   'Lopez',
   'Brown',
+  'Davis',
+  'Martinez',
+  'Wilson',
+  'Anderson',
+  'Thomas',
+  'Jackson',
+  'White',
+  'Harris',
+  'Martin',
+  'Thompson',
+  'Moore',
+  'Lee',
+  'Perez',
+  'Clark',
+  'Lewis',
+  'Young',
+  'Allen',
+  'Sanchez',
+  'Wright',
+  'King',
+  'Scott',
+  'Green',
+  'Baker',
+  'Adams',
+  'Nelson',
+  'Hill',
+  'Ramirez',
+  'Campbell',
+  'Mitchell',
+  'Roberts',
+  'Carter',
+  'Phillips',
+  'Evans',
+  'Turner',
+  'Torres',
+  'Parker',
+  'Collins',
+  'Edwards',
+  'Stewart',
+  'Morris',
 ] as const;
 
-export const REALISM_USERS: RealismUser[] = FIRST_NAMES.flatMap(firstName =>
-  LAST_NAMES.map((lastName, index) => {
-    const fullName = `${firstName} ${lastName}`;
-    const key = `${firstName.toLowerCase()}-${lastName.toLowerCase()}-${String(index + 1).padStart(3, '0')}`;
+export const REALISM_USERS: RealismUser[] = FIRST_NAMES.map((firstName, index) => {
+  const lastName = LAST_NAMES[index];
+  const fullName = `${firstName} ${lastName}`;
+  const key = `u${String(index + 1).padStart(9, '0')}`;
 
-    return {
-      key,
-      name: fullName,
-      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}${index + 1}@launchmail.io`,
-    };
-  })
-);
+  return {
+    key,
+    name: fullName,
+    email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@launchmail.io`,
+  };
+});

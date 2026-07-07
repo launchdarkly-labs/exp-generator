@@ -4,14 +4,15 @@ import { REALISM_USERS } from './realismUsers';
 import { STARTER_PERSONAS } from './StarterUserPersonas';
 
 describe('selectUserForMode', () => {
-  it('contains a realism pool of 100 stable identities', () => {
-    expect(REALISM_USERS).toHaveLength(100);
+  it('contains a realism pool of 50 stable identities', () => {
+    expect(REALISM_USERS).toHaveLength(50);
 
     const uniqueKeys = new Set(REALISM_USERS.map(user => user.key));
     const uniqueNames = new Set(REALISM_USERS.map(user => user.name));
 
-    expect(uniqueKeys.size).toBe(100);
-    expect(uniqueNames.size).toBe(100);
+    expect(uniqueKeys.size).toBe(50);
+    expect(uniqueNames.size).toBe(50);
+    expect(REALISM_USERS.every(user => user.key.length === 10)).toBe(true);
   });
 
   it('returns a fixed realism user and does not generate new keys', () => {

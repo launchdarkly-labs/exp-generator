@@ -262,7 +262,7 @@ const App = withLDProvider({
     streamUrl: 'https://stream-stg.launchdarkly.com',
     eventsUrl: 'https://events-stg.launchdarkly.com',
     eventCapacity: 1000,
-    privateAttributes: ['email', 'name'],
+    privateAttributes: ['email'],
   },
 })(AppWithLoginProvider);
 
