@@ -59,7 +59,13 @@ function AppContent() {
     loadInitialContext();
   }, [client]);
 
-  const updateUserContext = async (generatorMode: GeneratorMode): Promise<void> => {
+  const updateUserContext = async ({
+    generatorMode,
+    realismTrafficType = 'returning',
+  }: {
+    generatorMode: GeneratorMode;
+    realismTrafficType?: 'returning' | 'unique';
+  }): Promise<void> => {
     const context = await client?.getContext();
     setCurrentUserContext(context);
 
@@ -76,7 +82,11 @@ function AppContent() {
     const newAirplane = AIRPLANES[Math.floor(Math.random() * AIRPLANES.length)];
 
     const selectedUser = selectUserForMode({
-      mode: generatorMode,
+      mode:
+        generatorMode === GENERATOR_MODES.REALISM &&
+        realismTrafficType === 'unique'
+          ? GENERATOR_MODES.RANDOMIZATION
+          : generatorMode,
       createRandomKey: () => uuidv4().slice(0, 10),
       realismIndex:
         generatorMode === GENERATOR_MODES.REALISM
@@ -84,7 +94,10 @@ function AppContent() {
           : undefined,
     });
 
-    if (generatorMode === GENERATOR_MODES.REALISM) {
+    if (
+      generatorMode === GENERATOR_MODES.REALISM &&
+      realismTrafficType === 'returning'
+    ) {
       realismSequenceIndexRef.current =
         (realismSequenceIndexRef.current + 1) % REALISM_USERS.length;
     }

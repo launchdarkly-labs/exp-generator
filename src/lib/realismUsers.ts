@@ -4,68 +4,80 @@ export interface RealismUser {
   email: string;
 }
 
-const REALISM_FULL_NAMES = [
-  'Avery Nguyen',
-  'Jordan Patel',
-  'Taylor Chen',
-  'Riley Rivera',
-  'Morgan Garcia',
-  'Parker Smith',
-  'Casey Kim',
-  'Quinn Johnson',
-  'Jamie Lopez',
-  'Drew Brown',
-  'Alex Davis',
-  'Cameron Martinez',
-  'Dakota Wilson',
-  'Emerson Anderson',
-  'Finley Thomas',
-  'Hayden Jackson',
-  'Kendall White',
-  'Logan Harris',
-  'Marley Martin',
-  'Nico Thompson',
-  'Peyton Moore',
-  'Reese Lee',
-  'Rowan Perez',
-  'Sawyer Clark',
-  'Skyler Lewis',
-  'Addison Young',
-  'Bailey Allen',
-  'Charlie Sanchez',
-  'Devin Wright',
-  'Elliot King',
-  'Frankie Scott',
-  'Harper Green',
-  'Indigo Baker',
-  'Jules Adams',
-  'Kai Nelson',
-  'Lennon Hill',
-  'Micah Ramirez',
-  'Noel Campbell',
-  'Oakley Mitchell',
-  'Phoenix Roberts',
-  'Remy Carter',
-  'River Phillips',
-  'Sage Evans',
-  'Spencer Turner',
-  'Tatum Torres',
-  'Wren Parker',
-  'Zion Collins',
-  'Blake Edwards',
-  'Cody Stewart',
-  'Shiloh Morris',
+const FIRST_NAMES = [
+  'Avery',
+  'Jordan',
+  'Taylor',
+  'Riley',
+  'Morgan',
+  'Parker',
+  'Casey',
+  'Quinn',
+  'Jamie',
+  'Drew',
+  'Alex',
+  'Cameron',
+  'Dakota',
+  'Emerson',
+  'Finley',
+  'Hayden',
+  'Kendall',
+  'Logan',
+  'Marley',
+  'Nico',
+  'Peyton',
+  'Reese',
+  'Rowan',
+  'Sawyer',
+  'Skyler',
+  'Addison',
+  'Bailey',
+  'Charlie',
+  'Devin',
+  'Elliot',
+  'Frankie',
+  'Harper',
+  'Indigo',
+  'Jules',
+  'Kai',
 ] as const;
+
+const LAST_NAMES = [
+  'Nguyen',
+  'Patel',
+  'Chen',
+  'Rivera',
+  'Garcia',
+  'Smith',
+  'Kim',
+  'Johnson',
+  'Lopez',
+  'Brown',
+  'Davis',
+  'Martinez',
+  'Wilson',
+  'Anderson',
+  'Thomas',
+  'Jackson',
+  'White',
+  'Harris',
+  'Martin',
+  'Thompson',
+] as const;
+
+const REALISM_FULL_NAMES = FIRST_NAMES.flatMap(firstName =>
+  LAST_NAMES.map(lastName => `${firstName} ${lastName}`)
+);
 
 export const REALISM_USERS: RealismUser[] = REALISM_FULL_NAMES.map(
   (fullName, index) => {
-  const key = `u${String(index + 1).padStart(9, '0')}`;
-  const emailLocalPart = fullName.toLowerCase().replace(/\s+/g, '.');
+    const key = `u${String(index + 1).padStart(9, '0')}`;
+    const emailLocalPart = fullName.toLowerCase().replace(/\s+/g, '.');
 
-  return {
-    key,
-    name: fullName,
-    email: `${emailLocalPart}@launchmail.io`,
-  };
+    return {
+      key,
+      name: fullName,
+      email: `${emailLocalPart}@launchmail.io`,
+    };
   }
 );

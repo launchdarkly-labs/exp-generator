@@ -5,7 +5,10 @@ import { GENERATOR_MODES, GeneratorMode } from '../lib/generatorModes';
 
 interface ExperimentGeneratorProps {
   client: any;
-  updateUserContext: (generatorMode: GeneratorMode) => Promise<void>;
+  updateUserContext: (params: {
+    generatorMode: GeneratorMode;
+    realismTrafficType?: 'returning' | 'unique';
+  }) => Promise<void>;
   isRunning: boolean;
   setIsRunning: React.Dispatch<React.SetStateAction<boolean>>;
   progress: number;
@@ -55,6 +58,8 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
   const [generatorMode, setGeneratorMode] = useState<GeneratorMode>(
     GENERATOR_MODES.RANDOMIZATION
   );
+  const [realismUniqueUserPercentage, setRealismUniqueUserPercentage] =
+    useState(30);
   const [metrics, setMetrics] = useState<MetricConfiguration[]>(DEFAULT_METRICS);
   const [variationConfigurations, setVariationConfigurations] = useState<
     VariationConfiguration[]
@@ -72,6 +77,9 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
     const savedFlagKey = localStorage.getItem('custom-flag-key');
     const savedNumRuns = localStorage.getItem('custom-num-runs');
     const savedGeneratorMode = localStorage.getItem('generator-mode');
+    const savedRealismUniqueUserPercentage = localStorage.getItem(
+      'realism-unique-user-percentage'
+    );
     const savedMetrics = localStorage.getItem('custom-metrics');
     const savedVariations = localStorage.getItem('custom-variation-probabilities');
 
@@ -86,6 +94,16 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
       savedGeneratorMode === GENERATOR_MODES.REALISM
     ) {
       setGeneratorMode(savedGeneratorMode);
+    }
+    if (savedRealismUniqueUserPercentage) {
+      const parsedUniqueUserPercentage = parseInt(
+        savedRealismUniqueUserPercentage
+      );
+      if (!Number.isNaN(parsedUniqueUserPercentage)) {
+        setRealismUniqueUserPercentage(
+          Math.max(0, Math.min(100, parsedUniqueUserPercentage))
+        );
+      }
     }
     if (savedMetrics) {
       try {
@@ -167,6 +185,15 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
 
     setGeneratorMode(nextMode);
     localStorage.setItem('generator-mode', nextMode);
+  };
+
+  const handleRealismUniqueUserPercentageChange = (value: number) => {
+    const normalizedValue = Math.max(0, Math.min(100, value));
+    setRealismUniqueUserPercentage(normalizedValue);
+    localStorage.setItem(
+      'realism-unique-user-percentage',
+      normalizedValue.toString()
+    );
   };
 
   const saveMetricsToStorage = (newMetrics: typeof metrics) => {
@@ -298,6 +325,7 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
           probability: variation.probability,
         })),
         generatorMode,
+      realismUniqueUserPercentage,
         shouldStop: () => stopRequestedRef.current,
       });
     } finally {
@@ -379,8 +407,37 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
           </label>
           <p className="text-xs text-gray-500 mt-2">
             Randomization mode creates a new user key every run. Realism
-            generator mode reuses a fixed pool of users with stable keys.
+            generator mode blends returning users from a fixed pool with unique
+            users based on the percentage below.
           </p>
+          {generatorMode === GENERATOR_MODES.REALISM && (
+            <div className="mt-3 grid md:grid-cols-2 gap-3">
+              <div>
+                <label
+                  htmlFor="realismUniqueUserPercentage"
+                  className="block text-xs font-medium text-gray-600 mb-1"
+                >
+                  Unique Users (%)
+                </label>
+                <input
+                  type="number"
+                  id="realismUniqueUserPercentage"
+                  value={realismUniqueUserPercentage}
+                  onChange={e =>
+                    handleRealismUniqueUserPercentageChange(
+                      parseInt(e.target.value) || 0
+                    )
+                  }
+                  min="0"
+                  max="100"
+                  className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-end pb-2 text-xs text-gray-600">
+                Returning users: {100 - realismUniqueUserPercentage}%
+              </div>
+            </div>
+          )}
         </section>
         <section className="variation-assignment-config mb-4 p-3 bg-slate-50 border border-slate-200 rounded-md">
           <div className="flex justify-between items-center mb-3">

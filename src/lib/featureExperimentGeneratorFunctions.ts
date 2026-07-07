@@ -1,5 +1,5 @@
 import { wait } from './utils';
-import { GeneratorMode } from './generatorModes';
+import { GeneratorMode, GENERATOR_MODES } from './generatorModes';
 import {
   selectVariationByProbability,
   VariationProbability,
@@ -22,10 +22,14 @@ export const generateCustomFeatureExperimentResults = async ({
   metricValues,
   variationProbabilities,
   generatorMode,
+  realismUniqueUserPercentage = 0,
   shouldStop,
 }: {
   client: any;
-  updateContext: (generatorMode: GeneratorMode) => Promise<void>;
+  updateContext: (params: {
+    generatorMode: GeneratorMode;
+    realismTrafficType?: 'returning' | 'unique';
+  }) => Promise<void>;
   setProgress: React.Dispatch<React.SetStateAction<number>>;
   setExpGenerator: React.Dispatch<React.SetStateAction<boolean>>;
   totalRuns: number;
@@ -36,9 +40,20 @@ export const generateCustomFeatureExperimentResults = async ({
   }[];
   variationProbabilities: VariationProbability[];
   generatorMode: GeneratorMode;
+  realismUniqueUserPercentage?: number;
   shouldStop?: () => boolean;
 }): Promise<void> => {
   setProgress(0);
+
+  const normalizedUniqueUserPercentage = Math.max(
+    0,
+    Math.min(100, realismUniqueUserPercentage)
+  );
+  const targetUniqueRuns =
+    generatorMode === GENERATOR_MODES.REALISM
+      ? Math.round((totalRuns * normalizedUniqueUserPercentage) / 100)
+      : 0;
+  let assignedUniqueRuns = 0;
 
   try {
     for (let i = 0; i < totalRuns; i++) {
@@ -46,7 +61,28 @@ export const generateCustomFeatureExperimentResults = async ({
         break;
       }
 
-      await updateContext(generatorMode);
+      let realismTrafficType: 'returning' | 'unique' = 'returning';
+      if (generatorMode === GENERATOR_MODES.REALISM && targetUniqueRuns > 0) {
+        const remainingRuns = totalRuns - i;
+        const remainingUniqueRuns = targetUniqueRuns - assignedUniqueRuns;
+
+        if (remainingUniqueRuns > 0) {
+          if (remainingUniqueRuns >= remainingRuns) {
+            realismTrafficType = 'unique';
+          } else if (Math.random() < remainingUniqueRuns / remainingRuns) {
+            realismTrafficType = 'unique';
+          }
+        }
+      }
+
+      if (realismTrafficType === 'unique') {
+        assignedUniqueRuns += 1;
+      }
+
+      await updateContext({
+        generatorMode,
+        realismTrafficType,
+      });
 
       if (shouldStop?.()) {
         break;
