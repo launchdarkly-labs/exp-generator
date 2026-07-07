@@ -16,7 +16,6 @@ import {
   LAUNCH_CLUB_STANDARD,
   AIRPLANES,
 } from './lib/constants';
-import { STARTER_PERSONAS } from './lib/StarterUserPersonas';
 import {
   isAndroid,
   isIOS,
@@ -25,6 +24,8 @@ import {
   isMacOs,
   isWindows,
 } from 'react-device-detect';
+import { GeneratorMode } from './lib/generatorModes';
+import { selectUserForMode } from './lib/generatorUserSelection';
 
 import { v4 as uuidv4 } from 'uuid';
 
@@ -54,7 +55,7 @@ function AppContent() {
     loadInitialContext();
   }, [client]);
 
-  const updateUserContext = async (): Promise<void> => {
+  const updateUserContext = async (generatorMode: GeneratorMode): Promise<void> => {
     const context = await client?.getContext();
     setCurrentUserContext(context);
 
@@ -70,18 +71,20 @@ function AppContent() {
       newDevice === 'Mobile' ? ['iOS', 'Android'] : ['macOS', 'Windows'];
     const newAirplane = AIRPLANES[Math.floor(Math.random() * AIRPLANES.length)];
 
+    const selectedUser = selectUserForMode({
+      mode: generatorMode,
+      createRandomKey: () => uuidv4().slice(0, 10),
+    });
+
     const newContext = {
       ...context,
       user: {
         ...(context as any)?.user,
         anonymous: false,
-        key: uuidv4().slice(0, 10),
-        name: STARTER_PERSONAS[
-          Math.floor(Math.random() * STARTER_PERSONAS.length)
-        ].personaname,
-        email:
-          STARTER_PERSONAS[Math.floor(Math.random() * STARTER_PERSONAS.length)]
-            .personaemail,
+        // Stable keys let LaunchDarkly keep users on consistent variations.
+        key: selectedUser.key,
+        name: selectedUser.name,
+        email: selectedUser.email,
         role: [PERSONA_ROLE_USER, PERSONA_ROLE_BETA, PERSONA_ROLE_DEVELOPER][
           Math.floor(Math.random() * 3)
         ],

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { generateCustomFeatureExperimentResults } from '../lib/featureExperimentGeneratorFunctions';
 import ExperimentProgress from './ExperimentProgress';
+import { GENERATOR_MODES, GeneratorMode } from '../lib/generatorModes';
 
 interface ExperimentGeneratorProps {
   client: any;
-  updateUserContext: () => Promise<void>;
+  updateUserContext: (generatorMode: GeneratorMode) => Promise<void>;
   isRunning: boolean;
   setIsRunning: React.Dispatch<React.SetStateAction<boolean>>;
   progress: number;
@@ -29,6 +30,9 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
   const [customNumRuns, setCustomNumRuns] = useState(100);
   const [customTrueProbability, setCustomTrueProbability] = useState(60);
   const [customFalseProbability, setCustomFalseProbability] = useState(30);
+  const [generatorMode, setGeneratorMode] = useState<GeneratorMode>(
+    GENERATOR_MODES.RANDOMIZATION
+  );
   const [metrics, setMetrics] = useState<
     Array<{
       id: string;
@@ -53,6 +57,7 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
     const savedFalseProbability = localStorage.getItem(
       'custom-false-probability'
     );
+    const savedGeneratorMode = localStorage.getItem('generator-mode');
     const savedMetrics = localStorage.getItem('custom-metrics');
 
     if (savedFlagKey) {
@@ -66,6 +71,12 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
     }
     if (savedFalseProbability) {
       setCustomFalseProbability(parseInt(savedFalseProbability) || 30);
+    }
+    if (
+      savedGeneratorMode === GENERATOR_MODES.RANDOMIZATION ||
+      savedGeneratorMode === GENERATOR_MODES.REALISM
+    ) {
+      setGeneratorMode(savedGeneratorMode);
     }
     if (savedMetrics) {
       try {
@@ -98,6 +109,15 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
   const handleFalseProbabilityChange = (value: number) => {
     setCustomFalseProbability(value);
     localStorage.setItem('custom-false-probability', value.toString());
+  };
+
+  const handleGeneratorModeChange = (useRealismMode: boolean) => {
+    const nextMode = useRealismMode
+      ? GENERATOR_MODES.REALISM
+      : GENERATOR_MODES.RANDOMIZATION;
+
+    setGeneratorMode(nextMode);
+    localStorage.setItem('generator-mode', nextMode);
   };
 
   const saveMetricsToStorage = (newMetrics: typeof metrics) => {
@@ -165,6 +185,7 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
       defaultValue: false,
       customTrueProbability: customTrueProbability,
       customFalseProbability: customFalseProbability,
+      generatorMode,
     });
   };
 
@@ -217,6 +238,23 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
+        </section>
+        <section className="generator-mode-config mb-4 p-3 bg-slate-50 border border-slate-200 rounded-md">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={generatorMode === GENERATOR_MODES.REALISM}
+              onChange={e => handleGeneratorModeChange(e.target.checked)}
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Use realism generator
+            </span>
+          </label>
+          <p className="text-xs text-gray-500 mt-2">
+            Randomization mode creates a new user key every run. Realism
+            generator mode reuses a fixed pool of users with stable keys.
+          </p>
         </section>
         <section className="metrics-configuration mb-4">
           <div className="flex justify-between items-center mb-3">

@@ -1,4 +1,5 @@
 import { wait } from './utils';
+import { GeneratorMode } from './generatorModes';
 
 const waitTime = 0.005;
 
@@ -23,9 +24,10 @@ export const generateCustomFeatureExperimentResults = async ({
   defaultValue = false,
   customTrueProbability,
   customFalseProbability,
+  generatorMode,
 }: {
   client: any;
-  updateContext: () => void;
+  updateContext: (generatorMode: GeneratorMode) => Promise<void>;
   setProgress: React.Dispatch<React.SetStateAction<number>>;
   setExpGenerator: React.Dispatch<React.SetStateAction<boolean>>;
   experimentTypeObj: { experimentType: string; numOfRuns: number };
@@ -38,6 +40,7 @@ export const generateCustomFeatureExperimentResults = async ({
   defaultValue?: boolean | string | number;
   customTrueProbability?: number;
   customFalseProbability?: number;
+  generatorMode: GeneratorMode;
 }): Promise<void> => {
   setProgress(0);
 
@@ -104,7 +107,7 @@ export const generateCustomFeatureExperimentResults = async ({
         prevProgress + (1 / experimentTypeObj.numOfRuns) * 100
     );
     await wait(waitTime);
-    await updateContext();
+    await updateContext(generatorMode);
   }
   setExpGenerator(false);
 };
