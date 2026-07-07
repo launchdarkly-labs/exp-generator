@@ -22,6 +22,7 @@ export const generateCustomFeatureExperimentResults = async ({
   metricValues,
   variationProbabilities,
   generatorMode,
+  shouldStop,
 }: {
   client: any;
   updateContext: (generatorMode: GeneratorMode) => Promise<void>;
@@ -35,16 +36,25 @@ export const generateCustomFeatureExperimentResults = async ({
   }[];
   variationProbabilities: VariationProbability[];
   generatorMode: GeneratorMode;
+  shouldStop?: () => boolean;
 }): Promise<void> => {
   setProgress(0);
 
   for (let i = 0; i < totalRuns; i++) {
+    if (shouldStop?.()) {
+      break;
+    }
+
     const assignedVariation = selectVariationByProbability(variationProbabilities);
 
     // Keep requesting the flag so LaunchDarkly receives evaluation events.
     client?.variation(flagKey, assignedVariation);
 
     for (const metricValue of metricValues) {
+      if (shouldStop?.()) {
+        break;
+      }
+
       if (metricValue.value !== '') {
         client?.track(
           metricValue.key,
@@ -56,6 +66,10 @@ export const generateCustomFeatureExperimentResults = async ({
       }
 
       await client?.flush();
+    }
+
+    if (shouldStop?.()) {
+      break;
     }
 
     setProgress(

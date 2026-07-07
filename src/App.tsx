@@ -29,6 +29,9 @@ import { selectUserForMode } from './lib/generatorUserSelection';
 
 import { v4 as uuidv4 } from 'uuid';
 
+const CLIENT_ID_STORAGE_KEY = 'launchdarkly-client-id';
+const USE_STAGING_ENDPOINTS_STORAGE_KEY = 'launchdarkly-use-staging-endpoints';
+
 // Inner component that uses LaunchDarkly hooks
 function AppContent() {
   const flags = useFlags();
@@ -215,12 +218,44 @@ function AppContent() {
 
 // Get client ID from localStorage or environment variable
 function getClientId() {
-  const savedClientId = localStorage.getItem('launchdarkly-client-id');
+  const savedClientId = localStorage.getItem(CLIENT_ID_STORAGE_KEY);
   return (
     savedClientId ||
     process.env.REACT_APP_LD_CLIENT_ID ||
     'your-launchdarkly-client-id'
   );
+}
+
+function shouldUseStagingEndpoints() {
+  const savedUseStagingEndpoints = localStorage.getItem(
+    USE_STAGING_ENDPOINTS_STORAGE_KEY
+  );
+  if (savedUseStagingEndpoints === null) {
+    return true;
+  }
+
+  return savedUseStagingEndpoints === 'true';
+}
+
+function getLaunchDarklyOptions() {
+  const baseOptions = {
+    application: {
+      id: 'exp-generator',
+    },
+    eventCapacity: 1000,
+    privateAttributes: ['email'],
+  };
+
+  if (!shouldUseStagingEndpoints()) {
+    return baseOptions;
+  }
+
+  return {
+    ...baseOptions,
+    baseUrl: 'https://ld-stg.launchdarkly.com',
+    streamUrl: 'https://stream-stg.launchdarkly.com',
+    eventsUrl: 'https://events-stg.launchdarkly.com',
+  };
 }
 
 // Wrap AppContent with LoginProvider
@@ -254,16 +289,7 @@ const App = withLDProvider({
   reactOptions: {
     useCamelCaseFlagKeys: false,
   },
-  options: {
-    application: {
-      id: 'exp-generator',
-    },
-    baseUrl: 'https://ld-stg.launchdarkly.com', // Add this line to specify the staging endpoint
-    streamUrl: 'https://stream-stg.launchdarkly.com',
-    eventsUrl: 'https://events-stg.launchdarkly.com',
-    eventCapacity: 1000,
-    privateAttributes: ['email'],
-  },
+  options: getLaunchDarklyOptions(),
 })(AppWithLoginProvider);
 
 export default App;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { generateCustomFeatureExperimentResults } from '../lib/featureExperimentGeneratorFunctions';
 import ExperimentProgress from './ExperimentProgress';
 import { GENERATOR_MODES, GeneratorMode } from '../lib/generatorModes';
@@ -64,6 +64,8 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
     totalRuns: 0,
     experimentType: '',
   });
+  const [isStopRequested, setIsStopRequested] = useState(false);
+  const stopRequestedRef = useRef(false);
 
   // Load custom experiment settings from localStorage on component mount
   useEffect(() => {
@@ -259,16 +261,17 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
   const hasValidVariationProbability =
     validVariations.length > 0 &&
     Math.abs(totalVariationProbability - 100) < 0.001;
-  const canRunExperiment =
-    !isRunning &&
+  const canStartExperiment =
     customFlagKey.trim().length > 0 &&
     validMetrics.length > 0 &&
     hasValidVariationProbability;
 
   const runCustomExperiment = async () => {
-    if (!client || !canRunExperiment)
+    if (!client || isRunning || !canStartExperiment)
       return;
 
+    stopRequestedRef.current = false;
+    setIsStopRequested(false);
     setIsRunning(true);
     setProgress(0);
     setExperimentState({
@@ -277,23 +280,38 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
       experimentType: 'Custom Assignment',
     });
 
-    await generateCustomFeatureExperimentResults({
-      client,
-      updateContext: updateUserContext,
-      setProgress,
-      setExpGenerator: setIsRunning,
-      totalRuns: customNumRuns,
-      flagKey: customFlagKey.trim(),
-      metricValues: validMetrics.map(metric => ({
-        key: metric.key.trim(),
-        value: metric.value,
-      })),
-      variationProbabilities: validVariations.map(variation => ({
-        value: variation.value.trim(),
-        probability: variation.probability,
-      })),
-      generatorMode,
-    });
+    try {
+      await generateCustomFeatureExperimentResults({
+        client,
+        updateContext: updateUserContext,
+        setProgress,
+        setExpGenerator: setIsRunning,
+        totalRuns: customNumRuns,
+        flagKey: customFlagKey.trim(),
+        metricValues: validMetrics.map(metric => ({
+          key: metric.key.trim(),
+          value: metric.value,
+        })),
+        variationProbabilities: validVariations.map(variation => ({
+          value: variation.value.trim(),
+          probability: variation.probability,
+        })),
+        generatorMode,
+        shouldStop: () => stopRequestedRef.current,
+      });
+    } finally {
+      stopRequestedRef.current = false;
+      setIsStopRequested(false);
+    }
+  };
+
+  const stopExperiment = () => {
+    if (!isRunning) {
+      return;
+    }
+
+    stopRequestedRef.current = true;
+    setIsStopRequested(true);
   };
 
   return (
@@ -516,15 +534,23 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
         </section>
         <section className="experiment-actions flex gap-4">
           <button
-            onClick={runCustomExperiment}
-            disabled={!canRunExperiment}
+            onClick={isRunning ? stopExperiment : runCustomExperiment}
+            disabled={isRunning ? isStopRequested : !canStartExperiment}
             className={`px-4 py-2 font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              !canRunExperiment
-                ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                : 'bg-green-600 hover:bg-green-700 text-white focus:ring-green-500'
+              isRunning
+                ? isStopRequested
+                  ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                  : 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500'
+                : !canStartExperiment
+                  ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                  : 'bg-green-600 hover:bg-green-700 text-white focus:ring-green-500'
             }`}
           >
-            Run Experiment
+            {isRunning
+              ? isStopRequested
+                ? 'Stopping...'
+                : 'Stop Experiment'
+              : 'Run Experiment'}
           </button>
         </section>
       </section>
