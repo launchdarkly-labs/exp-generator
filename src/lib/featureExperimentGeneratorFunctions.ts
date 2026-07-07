@@ -1,12 +1,11 @@
 import { wait } from './utils';
 import { GeneratorMode } from './generatorModes';
+import {
+  selectVariationByProbability,
+  VariationProbability,
+} from './variationProbability';
 
 const waitTime = 0.005;
-
-const probablityExperimentType = {
-  bayesian: { trueProbablity: 60, falseProbablity: 30 },
-  frequentist: { trueProbablity: 60, falseProbablity: 52 },
-};
 
 // const probablityExperimentTypeSearchEngine = {
 //   bayesian: { trueProbablity: 30, falseProbablity: 60 },
@@ -18,93 +17,50 @@ export const generateCustomFeatureExperimentResults = async ({
   updateContext,
   setProgress,
   setExpGenerator,
-  experimentTypeObj,
+  totalRuns,
   flagKey,
   metricValues,
-  defaultValue = false,
-  customTrueProbability,
-  customFalseProbability,
+  variationProbabilities,
   generatorMode,
 }: {
   client: any;
   updateContext: (generatorMode: GeneratorMode) => Promise<void>;
   setProgress: React.Dispatch<React.SetStateAction<number>>;
   setExpGenerator: React.Dispatch<React.SetStateAction<boolean>>;
-  experimentTypeObj: { experimentType: string; numOfRuns: number };
+  totalRuns: number;
   flagKey: string;
   metricValues: {
     key: string;
-    trueValue: number | '';
-    falseValue: number | '';
+    value: number | '';
   }[];
-  defaultValue?: boolean | string | number;
-  customTrueProbability?: number;
-  customFalseProbability?: number;
+  variationProbabilities: VariationProbability[];
   generatorMode: GeneratorMode;
 }): Promise<void> => {
   setProgress(0);
 
-  const experimentType: string = experimentTypeObj.experimentType;
+  for (let i = 0; i < totalRuns; i++) {
+    const assignedVariation = selectVariationByProbability(variationProbabilities);
 
-  for (let i = 0; i < experimentTypeObj.numOfRuns; i++) {
-    const flagVariation = client?.variation(flagKey, defaultValue);
+    // Keep requesting the flag so LaunchDarkly receives evaluation events.
+    client?.variation(flagKey, assignedVariation);
 
-    // Generate different metrics based on flag variation with probability
-    if (flagVariation) {
-      // Winner variation - better metrics with probability
-      let probability = Math.random() * 100;
-      const trueProbThreshold =
-        customTrueProbability !== undefined
-          ? customTrueProbability
-          : probablityExperimentType[
-              experimentType as keyof typeof probablityExperimentType
-            ]['trueProbablity'];
-
-      if (probability < trueProbThreshold) {
-        for (const metricValue of metricValues) {
-          if (metricValue.trueValue !== '') {
-            client?.track(
-              metricValue.key,
-              undefined,
-              Math.floor(Number(metricValue.trueValue) * Math.random())
-            );
-          } else {
-            client?.track(metricValue.key);
-          }
-
-          await client?.flush();
-        }
+    for (const metricValue of metricValues) {
+      if (metricValue.value !== '') {
+        client?.track(
+          metricValue.key,
+          { assignedVariation },
+          Math.floor(Number(metricValue.value) * Math.random())
+        );
+      } else {
+        client?.track(metricValue.key, { assignedVariation });
       }
-    } else {
-      // Control variation - baseline metrics with probability
-      let probability = Math.random() * 100;
-      const falseProbThreshold =
-        customFalseProbability !== undefined
-          ? customFalseProbability
-          : probablityExperimentType[
-              experimentType as keyof typeof probablityExperimentType
-            ]['falseProbablity'];
 
-      if (probability < falseProbThreshold) {
-        for (const metricValue of metricValues) {
-          if (metricValue.falseValue !== '') {
-            client?.track(
-              metricValue.key,
-              undefined,
-              Math.floor(Number(metricValue.falseValue) * Math.random())
-            );
-          } else {
-            client?.track(metricValue.key);
-          }
-
-          await client?.flush();
-        }
-      }
+      await client?.flush();
     }
 
     setProgress(
       (prevProgress: number) =>
-        prevProgress + (1 / experimentTypeObj.numOfRuns) * 100
+        prevProgress + (1 / totalRuns) * 100
     );
     await wait(waitTime);
     await updateContext(generatorMode);

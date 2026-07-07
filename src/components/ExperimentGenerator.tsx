@@ -18,6 +18,30 @@ interface ExperimentState {
   experimentType: string;
 }
 
+interface MetricConfiguration {
+  id: string;
+  key: string;
+  value: number | '';
+}
+
+interface VariationConfiguration {
+  id: string;
+  value: string;
+  probability: number;
+}
+
+const createRowId = (): string =>
+  `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+
+const DEFAULT_METRICS: MetricConfiguration[] = [
+  { id: 'metric-1', key: '', value: '' },
+];
+
+const DEFAULT_VARIATIONS: VariationConfiguration[] = [
+  { id: 'variation-1', value: 'true', probability: 50 },
+  { id: 'variation-2', value: 'false', probability: 50 },
+];
+
 const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
   client,
   updateUserContext,
@@ -28,19 +52,13 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
 }) => {
   const [customFlagKey, setCustomFlagKey] = useState('');
   const [customNumRuns, setCustomNumRuns] = useState(100);
-  const [customTrueProbability, setCustomTrueProbability] = useState(60);
-  const [customFalseProbability, setCustomFalseProbability] = useState(30);
   const [generatorMode, setGeneratorMode] = useState<GeneratorMode>(
     GENERATOR_MODES.RANDOMIZATION
   );
-  const [metrics, setMetrics] = useState<
-    Array<{
-      id: string;
-      key: string;
-      trueValue: number | '';
-      falseValue: number | '';
-    }>
-  >([{ id: '1', key: '', trueValue: '', falseValue: '' }]);
+  const [metrics, setMetrics] = useState<MetricConfiguration[]>(DEFAULT_METRICS);
+  const [variationConfigurations, setVariationConfigurations] = useState<
+    VariationConfiguration[]
+  >(DEFAULT_VARIATIONS);
   const [experimentState, setExperimentState] = useState<ExperimentState>({
     currentRun: 0,
     totalRuns: 0,
@@ -51,26 +69,15 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
   useEffect(() => {
     const savedFlagKey = localStorage.getItem('custom-flag-key');
     const savedNumRuns = localStorage.getItem('custom-num-runs');
-    const savedTrueProbability = localStorage.getItem(
-      'custom-true-probability'
-    );
-    const savedFalseProbability = localStorage.getItem(
-      'custom-false-probability'
-    );
     const savedGeneratorMode = localStorage.getItem('generator-mode');
     const savedMetrics = localStorage.getItem('custom-metrics');
+    const savedVariations = localStorage.getItem('custom-variation-probabilities');
 
     if (savedFlagKey) {
       setCustomFlagKey(savedFlagKey);
     }
     if (savedNumRuns) {
       setCustomNumRuns(parseInt(savedNumRuns) || 100);
-    }
-    if (savedTrueProbability) {
-      setCustomTrueProbability(parseInt(savedTrueProbability) || 60);
-    }
-    if (savedFalseProbability) {
-      setCustomFalseProbability(parseInt(savedFalseProbability) || 30);
     }
     if (
       savedGeneratorMode === GENERATOR_MODES.RANDOMIZATION ||
@@ -82,10 +89,60 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
       try {
         const parsedMetrics = JSON.parse(savedMetrics);
         if (Array.isArray(parsedMetrics) && parsedMetrics.length > 0) {
-          setMetrics(parsedMetrics);
+          const normalizedMetrics: MetricConfiguration[] = parsedMetrics.map(
+            (metric: any, index: number) => {
+              const numericValue =
+                typeof metric?.value === 'number'
+                  ? metric.value
+                  : typeof metric?.trueValue === 'number'
+                    ? metric.trueValue
+                    : typeof metric?.falseValue === 'number'
+                      ? metric.falseValue
+                      : '';
+
+              return {
+                id: typeof metric?.id === 'string' ? metric.id : `metric-${index}`,
+                key: typeof metric?.key === 'string' ? metric.key : '',
+                value: numericValue,
+              };
+            }
+          );
+
+          setMetrics(
+            normalizedMetrics.length > 0 ? normalizedMetrics : DEFAULT_METRICS
+          );
         }
       } catch (error) {
         console.error('Failed to parse saved metrics:', error);
+      }
+    }
+
+    if (savedVariations) {
+      try {
+        const parsedVariations = JSON.parse(savedVariations);
+        if (Array.isArray(parsedVariations) && parsedVariations.length > 0) {
+          const normalizedVariations: VariationConfiguration[] =
+            parsedVariations.map((variation: any, index: number) => ({
+              id:
+                typeof variation?.id === 'string'
+                  ? variation.id
+                  : `variation-${index}`,
+              value:
+                typeof variation?.value === 'string' ? variation.value : '',
+              probability:
+                typeof variation?.probability === 'number'
+                  ? variation.probability
+                  : 0,
+            }));
+
+          setVariationConfigurations(
+            normalizedVariations.length > 0
+              ? normalizedVariations
+              : DEFAULT_VARIATIONS
+          );
+        }
+      } catch (error) {
+        console.error('Failed to parse saved variations:', error);
       }
     }
   }, []);
@@ -99,16 +156,6 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
   const handleNumRunsChange = (value: number) => {
     setCustomNumRuns(value);
     localStorage.setItem('custom-num-runs', value.toString());
-  };
-
-  const handleTrueProbabilityChange = (value: number) => {
-    setCustomTrueProbability(value);
-    localStorage.setItem('custom-true-probability', value.toString());
-  };
-
-  const handleFalseProbabilityChange = (value: number) => {
-    setCustomFalseProbability(value);
-    localStorage.setItem('custom-false-probability', value.toString());
   };
 
   const handleGeneratorModeChange = (useRealismMode: boolean) => {
@@ -138,10 +185,9 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
 
   const addMetric = () => {
     const newMetric = {
-      id: Date.now().toString(),
+      id: createRowId(),
       key: '',
-      trueValue: '' as number | '',
-      falseValue: '' as number | '',
+      value: '' as number | '',
     };
     const newMetrics = [...metrics, newMetric];
     setMetrics(newMetrics);
@@ -156,11 +202,71 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
     }
   };
 
-  const runCustomExperiment = async (
-    experimentType: 'bayesian' | 'frequentist'
+  const saveVariationsToStorage = (
+    newVariations: VariationConfiguration[]
+  ): void => {
+    localStorage.setItem(
+      'custom-variation-probabilities',
+      JSON.stringify(newVariations)
+    );
+  };
+
+  const updateVariationConfiguration = (
+    id: string,
+    field: keyof VariationConfiguration,
+    value: string | number
   ) => {
-    const validMetrics = metrics.filter(metric => metric.key.trim());
-    if (!client || isRunning || !customFlagKey || validMetrics.length === 0)
+    const newVariations = variationConfigurations.map(variation =>
+      variation.id === id ? { ...variation, [field]: value } : variation
+    );
+    setVariationConfigurations(newVariations);
+    saveVariationsToStorage(newVariations);
+  };
+
+  const addVariationConfiguration = () => {
+    const newVariations = [
+      ...variationConfigurations,
+      {
+        id: createRowId(),
+        value: '',
+        probability: 0,
+      },
+    ];
+    setVariationConfigurations(newVariations);
+    saveVariationsToStorage(newVariations);
+  };
+
+  const removeVariationConfiguration = (id: string) => {
+    if (variationConfigurations.length <= 1) {
+      return;
+    }
+
+    const newVariations = variationConfigurations.filter(
+      variation => variation.id !== id
+    );
+    setVariationConfigurations(newVariations);
+    saveVariationsToStorage(newVariations);
+  };
+
+  const validMetrics = metrics.filter(metric => metric.key.trim());
+  const validVariations = variationConfigurations.filter(variation =>
+    variation.value.trim()
+  );
+  const totalVariationProbability = validVariations.reduce(
+    (total, variation) => total + variation.probability,
+    0
+  );
+  const hasValidVariationProbability =
+    validVariations.length > 0 &&
+    Math.abs(totalVariationProbability - 100) < 0.001;
+  const canRunExperiment =
+    !isRunning &&
+    customFlagKey.trim().length > 0 &&
+    validMetrics.length > 0 &&
+    hasValidVariationProbability;
+
+  const runCustomExperiment = async () => {
+    if (!client || !canRunExperiment)
       return;
 
     setIsRunning(true);
@@ -168,7 +274,7 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
     setExperimentState({
       currentRun: 0,
       totalRuns: customNumRuns,
-      experimentType: `Custom ${experimentType.charAt(0).toUpperCase() + experimentType.slice(1)}`,
+      experimentType: 'Custom Assignment',
     });
 
     await generateCustomFeatureExperimentResults({
@@ -176,15 +282,16 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
       updateContext: updateUserContext,
       setProgress,
       setExpGenerator: setIsRunning,
-      experimentTypeObj: {
-        experimentType,
-        numOfRuns: customNumRuns,
-      },
-      flagKey: customFlagKey,
-      metricValues: validMetrics,
-      defaultValue: false,
-      customTrueProbability: customTrueProbability,
-      customFalseProbability: customFalseProbability,
+      totalRuns: customNumRuns,
+      flagKey: customFlagKey.trim(),
+      metricValues: validMetrics.map(metric => ({
+        key: metric.key.trim(),
+        value: metric.value,
+      })),
+      variationProbabilities: validVariations.map(variation => ({
+        value: variation.value.trim(),
+        probability: variation.probability,
+      })),
       generatorMode,
     });
   };
@@ -256,6 +363,88 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
             generator mode reuses a fixed pool of users with stable keys.
           </p>
         </section>
+        <section className="variation-assignment-config mb-4 p-3 bg-slate-50 border border-slate-200 rounded-md">
+          <div className="flex justify-between items-center mb-3">
+            <label className="block text-sm font-medium text-gray-700">
+              Variation Assignment (manual)
+            </label>
+            <button
+              type="button"
+              onClick={addVariationConfiguration}
+              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              + Add Variation
+            </button>
+          </div>
+          {variationConfigurations.map(variation => (
+            <div
+              key={variation.id}
+              className="grid grid-cols-12 gap-2 mb-3 items-end"
+            >
+              <div className="col-span-5">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Variation Value
+                </label>
+                <input
+                  type="text"
+                  value={variation.value}
+                  onChange={e =>
+                    updateVariationConfiguration(
+                      variation.id,
+                      'value',
+                      e.target.value
+                    )
+                  }
+                  placeholder="e.g., true, false, control-a"
+                  className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="col-span-5">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Assignment Probability (%)
+                </label>
+                <input
+                  type="number"
+                  value={variation.probability}
+                  onChange={e =>
+                    updateVariationConfiguration(
+                      variation.id,
+                      'probability',
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
+                  min="0"
+                  max="100"
+                  className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="col-span-2">
+                {variationConfigurations.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeVariationConfiguration(variation.id)}
+                    className="w-full px-2 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          <p className="text-xs text-gray-500">
+            This is a manual list because the app does not fetch flag metadata.
+            Configure variations and keep total assignment probability at 100%.
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Configured variations: {validVariations.length} | Total probability:{' '}
+            {totalVariationProbability.toFixed(2)}%
+          </p>
+          {!hasValidVariationProbability && (
+            <p className="text-xs text-red-600 mt-1">
+              Total assignment probability must equal 100% to run.
+            </p>
+          )}
+        </section>
         <section className="metrics-configuration mb-4">
           <div className="flex justify-between items-center mb-3">
             <label className="block text-sm font-medium text-gray-700">
@@ -269,12 +458,12 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
               + Add Metric
             </button>
           </div>
-          {metrics.map((metric, index) => (
+          {metrics.map(metric => (
             <div
               key={metric.id}
               className="metric-row grid grid-cols-12 gap-2 mb-3 items-end"
             >
-              <div className="metric-key-input col-span-4">
+              <div className="metric-key-input col-span-8">
                 <label className="block text-xs font-medium text-gray-600 mb-1">
                   Metric Key
                 </label>
@@ -286,38 +475,17 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
                   className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-              <div className="metric-true-value-input col-span-3">
+              <div className="metric-value-input col-span-2">
                 <label className="block text-xs font-medium text-gray-600 mb-1">
-                  True Value
+                  Value Max
                 </label>
                 <input
                   type="number"
-                  value={metric.trueValue}
+                  value={metric.value}
                   onChange={e =>
                     updateMetric(
                       metric.id,
-                      'trueValue',
-                      e.target.value === ''
-                        ? ''
-                        : parseInt(e.target.value) || ''
-                    )
-                  }
-                  placeholder="Optional"
-                  min="0"
-                  className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div className="metric-false-value-input col-span-3">
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  False Value
-                </label>
-                <input
-                  type="number"
-                  value={metric.falseValue}
-                  onChange={e =>
-                    updateMetric(
-                      metric.id,
-                      'falseValue',
+                      'value',
                       e.target.value === ''
                         ? ''
                         : parseInt(e.target.value) || ''
@@ -342,68 +510,16 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
             </div>
           ))}
           <p className="text-xs text-gray-500 mt-2">
-            Leave value fields blank to use random values. First metric's values
-            will be used as defaults for all metrics.
+            Leave value max blank to send events without a numeric metric value.
+            When set, each run sends a random value between 0 and this max.
           </p>
-        </section>
-        <section className="probability-config grid md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label
-              htmlFor="trueProbability"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              True Probability (%):
-            </label>
-            <input
-              type="number"
-              id="trueProbability"
-              value={customTrueProbability}
-              onChange={e =>
-                handleTrueProbabilityChange(parseInt(e.target.value) || 60)
-              }
-              min="0"
-              max="100"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Probability of tracking metrics when flag is true
-            </p>
-          </div>
-          <div>
-            <label
-              htmlFor="falseProbability"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              False Probability (%):
-            </label>
-            <input
-              type="number"
-              id="falseProbability"
-              value={customFalseProbability}
-              onChange={e =>
-                handleFalseProbabilityChange(parseInt(e.target.value) || 30)
-              }
-              min="0"
-              max="100"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Probability of tracking metrics when flag is false
-            </p>
-          </div>
         </section>
         <section className="experiment-actions flex gap-4">
           <button
-            onClick={() => runCustomExperiment('bayesian')}
-            disabled={
-              isRunning ||
-              !customFlagKey ||
-              metrics.filter(m => m.key.trim()).length === 0
-            }
+            onClick={runCustomExperiment}
+            disabled={!canRunExperiment}
             className={`px-4 py-2 font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              isRunning ||
-              !customFlagKey ||
-              metrics.filter(m => m.key.trim()).length === 0
+              !canRunExperiment
                 ? 'bg-gray-300 cursor-not-allowed text-gray-500'
                 : 'bg-green-600 hover:bg-green-700 text-white focus:ring-green-500'
             }`}
