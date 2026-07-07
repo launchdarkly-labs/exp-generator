@@ -12,6 +12,7 @@ interface SelectUserForModeParams {
   mode: GeneratorMode;
   createRandomKey: () => string;
   random?: () => number;
+  realismIndex?: number;
 }
 
 const getRandomIndex = (max: number, random: () => number): number =>
@@ -21,10 +22,15 @@ export const selectUserForMode = ({
   mode,
   createRandomKey,
   random = Math.random,
+  realismIndex,
 }: SelectUserForModeParams): GeneratorUserSelection => {
   if (mode === GENERATOR_MODES.REALISM) {
-    const realismUser: RealismUser =
-      REALISM_USERS[getRandomIndex(REALISM_USERS.length, random)];
+    const normalizedIndex =
+      realismIndex !== undefined
+        ? ((realismIndex % REALISM_USERS.length) + REALISM_USERS.length) %
+          REALISM_USERS.length
+        : getRandomIndex(REALISM_USERS.length, random);
+    const realismUser: RealismUser = REALISM_USERS[normalizedIndex];
     return realismUser;
   }
 

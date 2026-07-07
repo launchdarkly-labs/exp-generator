@@ -45,6 +45,12 @@ export const generateCustomFeatureExperimentResults = async ({
       break;
     }
 
+    await updateContext(generatorMode);
+
+    if (shouldStop?.()) {
+      break;
+    }
+
     const assignedVariation = selectVariationByProbability(variationProbabilities);
 
     // Keep requesting the flag so LaunchDarkly receives evaluation events.
@@ -77,7 +83,6 @@ export const generateCustomFeatureExperimentResults = async ({
         prevProgress + (1 / totalRuns) * 100
     );
     await wait(waitTime);
-    await updateContext(generatorMode);
   }
   setExpGenerator(false);
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   withLDProvider,
   useFlags,
@@ -24,8 +24,9 @@ import {
   isMacOs,
   isWindows,
 } from 'react-device-detect';
-import { GeneratorMode } from './lib/generatorModes';
+import { GeneratorMode, GENERATOR_MODES } from './lib/generatorModes';
 import { selectUserForMode } from './lib/generatorUserSelection';
+import { REALISM_USERS } from './lib/realismUsers';
 
 import { v4 as uuidv4 } from 'uuid';
 
@@ -41,6 +42,7 @@ function AppContent() {
   const [progress, setProgress] = useState(0);
   const [currentUserContext, setCurrentUserContext] = useState<any>(null);
   const [updatedUserContext, setUpdatedUserContext] = useState<any>(null);
+  const realismSequenceIndexRef = useRef(0);
 
   // Load initial context on component mount
   useEffect(() => {
@@ -77,7 +79,16 @@ function AppContent() {
     const selectedUser = selectUserForMode({
       mode: generatorMode,
       createRandomKey: () => uuidv4().slice(0, 10),
+      realismIndex:
+        generatorMode === GENERATOR_MODES.REALISM
+          ? realismSequenceIndexRef.current
+          : undefined,
     });
+
+    if (generatorMode === GENERATOR_MODES.REALISM) {
+      realismSequenceIndexRef.current =
+        (realismSequenceIndexRef.current + 1) % REALISM_USERS.length;
+    }
 
     const newContext = {
       ...context,

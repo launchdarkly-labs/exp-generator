@@ -28,6 +28,22 @@ describe('selectUserForMode', () => {
     expect(createRandomKey).not.toHaveBeenCalled();
   });
 
+  it('cycles realism users when realism index is provided', () => {
+    const firstUser = selectUserForMode({
+      mode: GENERATOR_MODES.REALISM,
+      createRandomKey: () => 'unused',
+      realismIndex: 0,
+    });
+    const wrappedUser = selectUserForMode({
+      mode: GENERATOR_MODES.REALISM,
+      createRandomKey: () => 'unused',
+      realismIndex: REALISM_USERS.length,
+    });
+
+    expect(firstUser).toEqual(REALISM_USERS[0]);
+    expect(wrappedUser).toEqual(REALISM_USERS[0]);
+  });
+
   it('returns persona identity and generates a fresh key for randomization', () => {
     const createRandomKey = jest.fn(() => 'random-key-123');
 
