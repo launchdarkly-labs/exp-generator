@@ -40,51 +40,55 @@ export const generateCustomFeatureExperimentResults = async ({
 }): Promise<void> => {
   setProgress(0);
 
-  for (let i = 0; i < totalRuns; i++) {
-    if (shouldStop?.()) {
-      break;
-    }
-
-    await updateContext(generatorMode);
-
-    if (shouldStop?.()) {
-      break;
-    }
-
-    const assignedVariation = selectVariationByProbability(variationProbabilities);
-
-    // Keep requesting the flag so LaunchDarkly receives evaluation events.
-    client?.variation(flagKey, assignedVariation);
-
-    for (const metricValue of metricValues) {
+  try {
+    for (let i = 0; i < totalRuns; i++) {
       if (shouldStop?.()) {
         break;
       }
 
-      if (metricValue.value !== '') {
-        client?.track(
-          metricValue.key,
-          { assignedVariation },
-          Math.floor(Number(metricValue.value) * Math.random())
-        );
-      } else {
-        client?.track(metricValue.key, { assignedVariation });
+      await updateContext(generatorMode);
+
+      if (shouldStop?.()) {
+        break;
       }
 
-      await client?.flush();
-    }
+      const assignedVariation =
+        selectVariationByProbability(variationProbabilities);
 
-    if (shouldStop?.()) {
-      break;
-    }
+      // Keep requesting the flag so LaunchDarkly receives evaluation events.
+      client?.variation(flagKey, assignedVariation);
 
-    setProgress(
-      (prevProgress: number) =>
-        prevProgress + (1 / totalRuns) * 100
-    );
-    await wait(waitTime);
+      for (const metricValue of metricValues) {
+        if (shouldStop?.()) {
+          break;
+        }
+
+        if (metricValue.value !== '') {
+          client?.track(
+            metricValue.key,
+            { assignedVariation },
+            Math.floor(Number(metricValue.value) * Math.random())
+          );
+        } else {
+          client?.track(metricValue.key, { assignedVariation });
+        }
+
+        await client?.flush();
+      }
+
+      if (shouldStop?.()) {
+        break;
+      }
+
+      setProgress(
+        (prevProgress: number) =>
+          prevProgress + (1 / totalRuns) * 100
+      );
+      await wait(waitTime);
+    }
+  } finally {
+    setExpGenerator(false);
   }
-  setExpGenerator(false);
 };
 
 // export const generateSuggestedItemsFeatureExperimentResults = async ({

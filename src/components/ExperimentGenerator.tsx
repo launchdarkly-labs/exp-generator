@@ -262,6 +262,7 @@ const ExperimentGenerator: React.FC<ExperimentGeneratorProps> = ({
     validVariations.length > 0 &&
     Math.abs(totalVariationProbability - 100) < 0.001;
   const canStartExperiment =
+    Boolean(client) &&
     customFlagKey.trim().length > 0 &&
     validMetrics.length > 0 &&
     hasValidVariationProbability;

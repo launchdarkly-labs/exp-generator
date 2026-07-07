@@ -31,7 +31,6 @@ import { REALISM_USERS } from './lib/realismUsers';
 import { v4 as uuidv4 } from 'uuid';
 
 const CLIENT_ID_STORAGE_KEY = 'launchdarkly-client-id';
-const USE_STAGING_ENDPOINTS_STORAGE_KEY = 'launchdarkly-use-staging-endpoints';
 
 // Inner component that uses LaunchDarkly hooks
 function AppContent() {
@@ -135,6 +134,7 @@ function AppContent() {
     console.log('updateUserContext', newContext);
     setUpdatedUserContext(newContext);
     await client?.identify(newContext as any);
+    await client?.flush();
   };
 
   return (
@@ -237,38 +237,6 @@ function getClientId() {
   );
 }
 
-function shouldUseStagingEndpoints() {
-  const savedUseStagingEndpoints = localStorage.getItem(
-    USE_STAGING_ENDPOINTS_STORAGE_KEY
-  );
-  if (savedUseStagingEndpoints === null) {
-    return true;
-  }
-
-  return savedUseStagingEndpoints === 'true';
-}
-
-function getLaunchDarklyOptions() {
-  const baseOptions = {
-    application: {
-      id: 'exp-generator',
-    },
-    eventCapacity: 1000,
-    privateAttributes: ['email'],
-  };
-
-  if (!shouldUseStagingEndpoints()) {
-    return baseOptions;
-  }
-
-  return {
-    ...baseOptions,
-    baseUrl: 'https://ld-stg.launchdarkly.com',
-    streamUrl: 'https://stream-stg.launchdarkly.com',
-    eventsUrl: 'https://events-stg.launchdarkly.com',
-  };
-}
-
 // Wrap AppContent with LoginProvider
 const AppWithLoginProvider = () => {
   return <AppContent />;
@@ -300,7 +268,16 @@ const App = withLDProvider({
   reactOptions: {
     useCamelCaseFlagKeys: false,
   },
-  options: getLaunchDarklyOptions(),
+  options: {
+    application: {
+      id: 'exp-generator',
+    },
+    baseUrl: 'https://ld-stg.launchdarkly.com',
+    streamUrl: 'https://stream-stg.launchdarkly.com',
+    eventsUrl: 'https://events-stg.launchdarkly.com',
+    eventCapacity: 1000,
+    privateAttributes: ['email'],
+  },
 })(AppWithLoginProvider);
 
 export default App;
