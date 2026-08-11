@@ -31,9 +31,16 @@ import { REALISM_USERS } from './lib/realismUsers';
 import { v4 as uuidv4 } from 'uuid';
 
 const CLIENT_ID_STORAGE_KEY = 'launchdarkly-client-id';
+const LD_ENVIRONMENT_STORAGE_KEY = 'launchdarkly-environment';
 
 // Inner component that uses LaunchDarkly hooks
-function AppContent() {
+function AppContent({ 
+  isStaging, 
+  onEnvironmentChange 
+}: { 
+  isStaging: boolean; 
+  onEnvironmentChange: (isStaging: boolean) => void; 
+}) {
   const flags = useFlags();
   const client = useLDClient();
 
@@ -184,6 +191,13 @@ function AppContent() {
           </div>
         </header>
 
+        <section className="environment-configuration">
+          <EnvironmentToggle 
+            isStaging={isStaging} 
+            onEnvironmentChange={onEnvironmentChange} 
+          />
+        </section>
+
         <section className="launchdarkly-configuration">
           <LaunchDarklyConfig />
         </section>
@@ -250,47 +264,131 @@ function getClientId() {
   );
 }
 
+// Environment toggle component
+function EnvironmentToggle({ 
+  isStaging, 
+  onEnvironmentChange 
+}: { 
+  isStaging: boolean; 
+  onEnvironmentChange: (isStaging: boolean) => void; 
+}) {
+  return (
+    <div className="environment-toggle mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+      <label className="flex items-center space-x-2 text-sm">
+        <input
+          type="checkbox"
+          checked={isStaging}
+          onChange={(e) => onEnvironmentChange(e.target.checked)}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        />
+        <span className="text-blue-800 font-medium">
+          Use LaunchDarkly Staging Environment
+        </span>
+      </label>
+      <p className="text-xs text-blue-600 mt-1 ml-6">
+        {isStaging 
+          ? "Connected to ld-stg.launchdarkly.com" 
+          : "Connected to LaunchDarkly Production"}
+      </p>
+    </div>
+  );
+}
+
 // Wrap AppContent with LoginProvider
-const AppWithLoginProvider = () => {
-  return <AppContent />;
+const AppWithLoginProvider = ({ 
+  isStaging, 
+  onEnvironmentChange 
+}: { 
+  isStaging: boolean; 
+  onEnvironmentChange: (isStaging: boolean) => void; 
+}) => {
+  return <AppContent isStaging={isStaging} onEnvironmentChange={onEnvironmentChange} />;
 };
 
-// Export the app wrapped with LaunchDarkly provider using dynamic client ID
-const operatingSystem = isAndroid
-  ? 'Android'
-  : isIOS
-    ? 'iOS'
-    : isWindows
-      ? 'Windows'
-      : isMacOs
-        ? 'macOS'
-        : '';
-const device = isMobile ? 'Mobile' : isBrowser ? 'Desktop' : '';
-const App = withLDProvider({
-  clientSideID: getClientId(),
-  context: {
-    kind: 'multi',
-    user: {
-      anonymous: true,
-      key: uuidv4().slice(0, 10),
-      device: device,
-      operating_system: operatingSystem,
-      location: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    },
-  },
-  reactOptions: {
-    useCamelCaseFlagKeys: false,
-  },
-  options: {
+// Get LaunchDarkly options based on environment
+function getLDOptions(isStaging: boolean) {
+  const baseOptions = {
     application: {
       id: 'exp-generator',
     },
-    baseUrl: 'https://ld-stg.launchdarkly.com',
-    streamUrl: 'https://stream-stg.launchdarkly.com',
-    eventsUrl: 'https://events-stg.launchdarkly.com',
     eventCapacity: 1000,
     privateAttributes: ['email'],
-  },
-})(AppWithLoginProvider);
+  };
+
+  if (isStaging) {
+    return {
+      ...baseOptions,
+      baseUrl: 'https://ld-stg.launchdarkly.com',
+      streamUrl: 'https://stream-stg.launchdarkly.com',
+      eventsUrl: 'https://events-stg.launchdarkly.com',
+    };
+  }
+
+  // Production - omit custom URLs to use LaunchDarkly defaults
+  return baseOptions;
+}
+
+// Get saved environment preference
+function getIsStaging() {
+  const saved = localStorage.getItem(LD_ENVIRONMENT_STORAGE_KEY);
+  return saved !== null ? JSON.parse(saved) : true; // Default to staging for safety
+}
+
+// Create LaunchDarkly provider component
+function createLDApp(isStaging: boolean, onEnvironmentChange: (isStaging: boolean) => void) {
+  const operatingSystem = isAndroid
+    ? 'Android'
+    : isIOS
+      ? 'iOS'
+      : isWindows
+        ? 'Windows'
+        : isMacOs
+          ? 'macOS'
+          : '';
+  const device = isMobile ? 'Mobile' : isBrowser ? 'Desktop' : '';
+
+  const WrappedApp = (props: any) => (
+    <AppWithLoginProvider 
+      isStaging={isStaging} 
+      onEnvironmentChange={onEnvironmentChange} 
+      {...props} 
+    />
+  );
+
+  return withLDProvider({
+    clientSideID: getClientId(),
+    context: {
+      kind: 'multi',
+      user: {
+        anonymous: true,
+        key: uuidv4().slice(0, 10),
+        device: device,
+        operating_system: operatingSystem,
+        location: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+    },
+    reactOptions: {
+      useCamelCaseFlagKeys: false,
+    },
+    options: getLDOptions(isStaging),
+  })(WrappedApp);
+}
+
+// Main App component with environment switching
+function App() {
+  const [isStaging, setIsStaging] = useState(getIsStaging);
+  
+  const handleEnvironmentChange = (newIsStaging: boolean) => {
+    setIsStaging(newIsStaging);
+    localStorage.setItem(LD_ENVIRONMENT_STORAGE_KEY, JSON.stringify(newIsStaging));
+    
+    // Create new LaunchDarkly app with updated environment
+    setLDApp(() => createLDApp(newIsStaging, handleEnvironmentChange));
+  };
+
+  const [LDApp, setLDApp] = useState(() => createLDApp(isStaging, handleEnvironmentChange));
+
+  return <LDApp key={isStaging ? 'staging' : 'production'} />;
+}
 
 export default App;
